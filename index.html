@@ -319,8 +319,16 @@ function chord(q){ctx();const start=audio.currentTime;q.notes.forEach(m=>tone(m,
 const isBlack=m=>[1,3,6,8,10].includes(pc(m));
 const WHITE_WIDTH=38, BLACK_WIDTH=24;
 function whiteIndex(m){let n=0;for(let i=Math.min(21,m);i<Math.max(21,m);i++)if(!isBlack(i))n++;return m<21?-n:n}
-function keycapFor(m,base){let white1="qwertyu",white2="zxcvbnm",black1={1:"2",3:"3",6:"5",8:"6",10:"7"},black2={1:"s",3:"d",6:"g",8:"h",10:"j"};let oct=Math.floor((m-base)/12),relative=pc(m);if(oct<0||oct>1)return "";if(isBlack(m))return (oct===0?black1:black2)[relative]||"";let index=[0,2,4,5,7,9,11].indexOf(relative);return (oct===0?white1:white2)[index]||""}
-function buildKeys(el,first,last,onHit,active,showCaps=false){el.innerHTML="";let whites=0;const keys=[];for(let m=first;m<=last;m++){if(isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="white";b.style.left=(whites*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?"U / A":keycapFor(m,first)):""}</span><span>${noteName(m)}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b);whites++}for(let m=first;m<=last;m++){if(!isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="black";b.style.left=((whiteIndex(m)-whiteIndex(first))*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?"U / A":keycapFor(m,first)):""}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b)}el.style.width=(whites*WHITE_WIDTH)+"px";keys.forEach(b=>b.classList.toggle("picked",active.has(+b.dataset.midi)));return keys}
+function keycapFor(m,base){
+ const offset=m-base;
+ if(offset<0||offset>=24)return "";
+ const upper=offset>=12, start=base+(upper?12:0);
+ const black=isBlack(m), left=black?m-1:m;
+ const slot=whiteIndex(left)-whiteIndex(start);
+ return (black?(upper?"sdfghjk":"2345678"):(upper?"zxcvbnm":"qwertyu"))[slot];
+}
+function keyboardBase(note){return isBlack(note)?note-1:note}
+function buildKeys(el,first,last,onHit,active,showCaps=false){el.innerHTML="";let whites=0;const keys=[];for(let m=first;m<=last;m++){if(isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="white";b.style.left=(whites*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?keycapFor(m,first).toUpperCase()+" / A":keycapFor(m,first)):""}</span><span>${noteName(m)}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b);whites++}for(let m=first;m<=last;m++){if(!isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="black";b.style.left=((whiteIndex(m)-whiteIndex(first))*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?keycapFor(m,first).toUpperCase()+" / A":keycapFor(m,first)):""}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b)}el.style.width=(whites*WHITE_WIDTH)+"px";keys.forEach(b=>b.classList.toggle("picked",active.has(+b.dataset.midi)));return keys}
 function allowedAdd(set,m){return m>=21&&m<=108}
 function renderNoteChecks(id,set){let name=id==="introNotes"?"intro":"pool",el=$(id);buildKeys(el,21,108,m=>{if(set.has(m))set.delete(m);else if(allowedAdd(set,m)){set.add(m);tone(m,.3)}renderNoteChecks(id,set)},set);$(name+"Summary").textContent=[...set].sort((a,b)=>a-b).map(noteName).join(" · ")||"No notes selected";$(name+"Limit").textContent=`${set.size} notes selected · full 88-key range`;}
 function scrollPicker(which,m){let el=$(which+"Scroll");el.scrollLeft=Math.max(0,whiteIndex(m)*WHITE_WIDTH-el.clientWidth/3)}
@@ -407,7 +415,7 @@ const inWindow=(q,base)=>q.notes.every(n=>n>=base&&n<base+24);
 function coverageWindowStarts(notes){
  const remain=[...new Set(notes)].sort((a,b)=>a-b),bases=[];
  while(remain.length){
-  const first=remain[0],base=Math.min(96,Math.max(12,Math.floor(first/12)*12));
+  const first=remain[0],base=keyboardBase(first);
   bases.push(base);
   while(remain.length&&remain[0]<base+24)remain.shift();
  }
@@ -421,11 +429,13 @@ function practiceWindowStarts(notes){
  // For wider ranges, use *overlapping* octave-aligned two-octave windows.
  // The first covers the lowest pitch; the last reaches the highest pitch
  // without reserving an almost-empty window for the final high note.
- const low=Math.min(96,Math.max(12,Math.floor(ordered[0]/12)*12));
- const high=Math.min(96,Math.max(low,Math.floor((ordered.at(-1)-12)/12)*12));
+ const low=keyboardBase(ordered[0]);
+ const last=ordered.at(-1);
  const bases=[];
- for(let base=low;base<=high;base+=12)
+ for(let base=low;base<last;base+=12){
   if(ordered.some(n=>n>=base&&n<base+24))bases.push(base);
+  if(last<base+24)break;
+ }
  return bases;
 }
 // Plan each exercise's windows in a random order, not low-to-high.
@@ -474,7 +484,7 @@ const revealNote=n=>({kind:"note",notes:[n],symbol:noteName(n)});
 const revealId=q=>q.kind==="chord"?"chord:"+q.root+":"+q.suffix+":"+signature(q):q.kind+":"+signature(q);
 function revealBaseFor(notes,preferred){
  if(mode==="midi")return 48;
- const bases=Array.from({length:8},(_,i)=>12+i*12)
+ const bases=Array.from({length:88},(_,i)=>21+i).filter(base=>!isBlack(base))
   .filter(base=>notes.every(n=>n>=base&&n<base+24));
  if(!bases.length)return null;
  if(bases.includes(preferred))return preferred;
@@ -486,7 +496,7 @@ function revealQuestion(q,phase){
 }
 function rebuildRevealPages(){
  lessonPages=[];pageBases=[];
- let preferred=mode==="midi"?48:(revealBaseFor(questions[0]?.notes||[60],48)??48);
+ let preferred=mode==="midi"?48:(revealBaseFor(questions[0]?.notes||[60],keyboardBase(Math.min(...practiceRoots())))??48);
  for(let i=0;i<questions.length;i++){
   const q=questions[i];
   let page=lessonPages.at(-1);
@@ -1190,7 +1200,7 @@ function renderPiano(){const base=currentPageBase();
   b.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();b.setPointerCapture(e.pointerId);enter(+b.dataset.midi,"pointer:"+e.pointerId)};
   b.onpointerup=e=>release("pointer:"+e.pointerId);b.onlostpointercapture=b.onpointerup;
  }
- $("keyLegend").textContent=mode==="keyboard"?"Q–U lower · Z–M upper · Lower black keys: 2 3 5 6 7 · Upper black keys: S D G H J · A = C♭ above-left of Z · Each black key is the sharp of its left neighbor and the flat of its right neighbor.":"Tap keys to enter notes.";paintPiano()}
+ $("keyLegend").textContent=mode==="keyboard"?"Q–U lower · Z–M upper · Use the labeled keys between neighboring white keys for accidentals · A also plays the note just below Z · Each black key is the sharp of its left neighbor and the flat of its right neighbor.":"Tap keys to enter notes.";paintPiano()}
 window.addEventListener("keydown",e=>{
  if(e.code==="F1"&&activePractice()){
   e.preventDefault();
