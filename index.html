@@ -185,7 +185,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <button id="introBtn">Introduction · Guided learning</button>
   <button id="utilBtn">Utilization · Mixed practice</button>
   <button id="weakBtn">Weaknesses · Targeted practice</button>
- </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews every item once per round for eight shuffled rounds. The question total grows before Reveal ends. Introduction remains a 72-question guided stage when new notes are selected. Completion indicators last only for this session.</p></div>
+ </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews each item in eight shuffled rounds. Utilization mixes familiar and newly introduced material across the full note pool. The question total grows before Reveal ends. Guided Introduction shortens sections when only a few distinct targets are available. Completion indicators last only for this session.</p></div>
  <div class="screen-actions"><button data-back="s-quiztypes">Back</button><button class="secondary" data-next="s-intro">Edit note introduction</button></div>
 </section>
 
@@ -523,6 +523,7 @@ function initReveal(){
  questions=focus.flatMap(n=>revealExposures(revealNote(n),"meet"));
  rebuildRevealPages();
 }
+
 const revealReviewRounds=8;
 function revealExposures(q,phase){
  return Array.from({length:3},(_,i)=>({...revealQuestion(q,phase),exposure:i+1}));
@@ -583,11 +584,10 @@ function beginRevealReinforcement(){
  const tasks=[];
  for(let round=0;round<revealReviewRounds;round++){
   const batch=shuffle(state.pendingReviews);
-  const previous=tasks.at(-1) || questions.at(-1);
-  if(batch.length>1 && revealId(batch[0])===revealId(previous)){
+  const previous=tasks.at(-1)||questions.at(-1);
+  if(batch.length>1&&revealId(batch[0])===revealId(previous))
    [batch[0],batch[1]]=[batch[1],batch[0]];
-  }
-  for(const item of batch)tasks.push({...item});
+  tasks.push(...batch.map(item=>({...item})));
  }
  state.pendingReviews=[];
  questions=questions.concat(tasks);
@@ -620,7 +620,11 @@ function scheduleOrderedExercises(types,source,total){
   const warning=$("exerciseWarning");warning.textContent="Select at least one exercise type.";warning.hidden=false;return false;
  }
  questions=[];lessonPages=[];pageBases=[];
- const noteAppearances=new Map([...intro].map(n=>[n,0]));
+ const noteAppearances=new Map((stage==="INTRODUCTION"?[...intro]:[]).map(n=>[n,0]));
+ const materialUses=new Map();
+ const guidedUses=new Map();
+ const guided=stage==="INTRODUCTION"&&intro.size>0;
+ const targetKey=q=>q.type+":"+signature(q);
  const windowUsage=new Map();
  const selectedNotes=practiceRoots(),extremes=[selectedNotes[0],selectedNotes.at(-1)];
  let previousQuestion=null;
@@ -634,10 +638,17 @@ function scheduleOrderedExercises(types,source,total){
   for(let i=0;i<count;i++){
    // Alternate available categories (interval/chord or note/chord) in each window.
    // Otherwise numerous interval pairs could drown out the fewer valid chords.
-   let options=kinds.length>1?candidates.filter(q=>q.kind===kinds[i%kinds.length]):candidates;
+   const available=guided?candidates.filter(q=>targetKey(q)!==previousQuestion&&(guidedUses.get(targetKey(q))||0)<3):candidates;
+   if(!available.length)break;
+   let options=available;
+   if(kinds.length>1){
+    const matching=available.filter(q=>q.kind===kinds[i%kinds.length]);
+    if(matching.length)options=matching;
+   }
    if(forced.has(i)){
     const fitting=options.filter(q=>q.notes.includes(forced.get(i)));
-    options=fitting.length?fitting:candidates.filter(q=>q.notes.includes(forced.get(i)));
+    const any=fitting.length?fitting:available.filter(q=>q.notes.includes(forced.get(i)));
+    if(any.length)options=any;
    }
    if(noteAppearances.size){
     const least=q=>{const exposures=q.notes.filter(n=>noteAppearances.has(n)).map(n=>noteAppearances.get(n));return exposures.length?Math.min(...exposures):Infinity};
@@ -646,8 +657,15 @@ function scheduleOrderedExercises(types,source,total){
    }
    const alternatives=options.filter(q=>q.type+":"+signature(q)!==previousQuestion);
    if(alternatives.length)options=alternatives;
+   if(stage==="UTILIZATION"){
+    const uses=q=>materialUses.get(signature(q))||0;
+    const minimum=Math.min(...options.map(uses));
+    options=options.filter(q=>uses(q)===minimum);
+   }
    const chosen=options[Math.floor(Math.random()*options.length)];
+   if(stage==="UTILIZATION")materialUses.set(signature(chosen),(materialUses.get(signature(chosen))||0)+1);
    previousQuestion=chosen.type+":"+signature(chosen);
+   if(guided)guidedUses.set(previousQuestion,(guidedUses.get(previousQuestion)||0)+1);
    for(const n of chosen.notes)if(noteAppearances.has(n))noteAppearances.set(n,noteAppearances.get(n)+1);
    out.push({...chosen});
   }
@@ -665,11 +683,12 @@ function scheduleOrderedExercises(types,source,total){
    const amount=Math.min(groupSize,remaining),start=questions.length;
    const need=extremes.filter(n=>!covered.has(n)&&window.candidates.some(q=>q.notes.includes(n)));
    const questionsOnPage=chooseQuestions(window.candidates,amount,need);
+   if(!questionsOnPage.length)continue;
    questions.push(...questionsOnPage);
    for(const n of extremes)if(questionsOnPage.some(q=>q.notes.includes(n)))covered.add(n);
    lessonPages.push({start,end:questions.length,base:window.base});
    pageBases.push(window.base);
-   remaining-=amount;
+   remaining-=questionsOnPage.length;
   }
  });
  return true;
@@ -684,7 +703,6 @@ function startPractice(s){
   const types=chosenTypes(),bank=materials(),old=history.filter(x=>!x.ok);
   let source=bank;
   if(s==="INTRODUCTION"&&intro.size)source=bank.filter(q=>q.notes.some(n=>intro.has(n)));
-  if(s==="UTILIZATION"&&old.length)source=[...bank,...bank.filter(q=>old.some(r=>r.key===signature(q)))];
   if(s==="WEAKNESSES")source=bank.filter(q=>old.some(r=>r.key===signature(q)));
   // Overlapping randomization must not increase the lesson's total length.
   const windowCount=mode==="midi"?1:coverageWindowStarts(practiceRoots()).length;
