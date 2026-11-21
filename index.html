@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111722">
+<title>Music Theory Trainer</title>
+<style>
+:root{color-scheme:dark;--bg:#10151e;--panel:#192231;--panel2:#222e40;--line:#35445a;--fg:#edf3fb;--muted:#a8b5c7;--blue:#6db7ff;--green:#55d69a;--red:#ff8888}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{padding-bottom:env(safe-area-inset-bottom)}header{padding:9px max(12px,calc((100vw - 1200px)/2));border-bottom:1px solid var(--line);background:#141c28;position:sticky;top:0;z-index:5}
+.brand{font-weight:750;font-size:19px}.sub{color:var(--muted);font-size:12px}
+main{width:min(100% - 16px,1200px);margin:10px auto 36px}
+.screen{display:none}.screen.active{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:clamp(10px,1.5vw,15px);margin-bottom:8px}
+h1{font-size:23px;margin:0 0 6px}h2{font-size:18px;margin:0 0 12px}h3{font-size:14px;margin:12px 0 8px}
+p{margin:7px 0}.muted{color:var(--muted)}.tiny{font-size:12px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.between{justify-content:space-between}
+button,select,input{font:inherit}button,select,.file-label{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg);padding:10px 13px}
+button{cursor:pointer;min-height:42px}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button.primary{background:#15518a;border-color:#347db9}button.secondary{background:transparent}button:disabled{opacity:.45;cursor:not-allowed}
+input[type=checkbox],input[type=radio]{accent-color:var(--blue);width:18px;height:18px}
+input[type=file]{max-width:100%}select{max-width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
+.choice{display:flex;gap:9px;align-items:center;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;min-height:44px}
+.choice span{flex:1}.choice small{display:block;color:var(--muted);font-size:11px}
+.progress{height:5px;background:#293548;border-radius:8px;overflow:hidden;margin:12px 0 18px}.progress>i{display:block;height:100%;background:var(--blue);width:0}
+.step{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.note-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.note{display:flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 6px;font-size:13px}
+.note input{margin:0}
+.piano-scroll{overflow-x:auto;overscroll-behavior-x:contain;padding:6px 0;scrollbar-width:thin;max-width:100%}
+.piano{position:relative;display:block;height:152px;width:max-content;touch-action:pan-x;user-select:none}
+.white{position:absolute;top:0;width:38px;height:148px;background:#f7f7f3;color:#20242b;border:1px solid #9ca3af;border-radius:0 0 5px 5px;display:flex;justify-content:center;align-items:flex-end;padding:0 0 8px;font-size:10px;z-index:1}
+.white .cap{position:absolute;top:5px;color:#555;font-size:10px;font-weight:700}
+.white.active{background:#a9d7ff}
+.black{position:absolute;top:0;width:24px;height:94px;background:#20242b;color:white;border:1px solid #050608;border-radius:0 0 4px 4px;z-index:2;transform:translateX(-50%);font-size:9px;padding:0 0 6px}
+.black.active{background:#2877b9}.piano button{touch-action:pan-x;cursor:pointer}.piano .cap{pointer-events:none;white-space:pre-line;text-align:center;line-height:1.1}.black .cap{position:absolute;top:10px;left:0;right:0;font-size:9px;font-weight:700;color:#fff}.piano-picker .white{height:122px}.piano-picker .black{height:77px}.piano-picker{height:126px}.piano-picker .white.picked{background:#80c4fc}.piano-picker .black.picked{background:#3386d0}.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start}.split>*{min-width:0}.compact-title{font-size:15px;margin:0 0 6px}.picker-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:7px 0}.picker-tools button{min-height:32px;padding:5px 9px}.picker-tools select{padding:5px 8px}.picker-summary{font-size:12px;color:var(--muted);max-height:55px;overflow:auto}.screen h1{font-size:19px}.step{margin-bottom:3px}.screen-actions{margin-top:8px}.piano .white .cap{color:#3b4a5a}.status{padding:7px;min-height:34px}
+.prompt{font-size:clamp(24px,5vw,36px);font-weight:750;margin:10px 0}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.answers button{font-size:16px;min-height:52px;overflow-wrap:anywhere}
+.status{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px;margin-top:10px;min-height:44px}
+.status.good{border-color:var(--green)}.status.bad{border-color:var(--red)}
+.pill{border:1px solid var(--line);border-radius:999px;padding:4px 9px;font-size:12px;color:var(--muted)}
+.hidden{display:none!important}.screen-actions{display:flex;justify-content:space-between;gap:8px;margin-top:18px}
+.symbols{display:flex;flex-wrap:wrap;gap:7px}.symbol{padding:8px 11px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+footer{max-width:1000px;margin:20px auto;padding:0 12px 24px;color:var(--muted);font-size:11px}
+@media(max-width:600px){.split{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}.split .panel{padding:7px}.split h2{font-size:13px}.split button{font-size:12px;padding:6px}.split .piano-scroll{width:100%}.split .piano{height:123px}.split .piano .white{height:119px}.split .piano .black{height:75px}.split .piano .cap{font-size:8px}.split .row{gap:5px}header .sub{display:none}header{padding:12px 14px}.brand{font-size:17px}main{width:calc(100% - 16px);margin:10px auto 32px}.panel{border-radius:12px;padding:14px;margin-bottom:10px}.note-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.answers{grid-template-columns:1fr 1fr}.screen-actions button{flex:1}.piano{height:145px}.white{height:141px;width:35px}.black{height:88px;width:22px}}
+main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{width:38px}.piano .black{width:24px}.piano .white .cap{top:auto;bottom:27px;text-transform:uppercase}.piano .black .cap{text-transform:uppercase}.piano button{padding:0 0 5px}#timeline{position:relative;display:flex;background:#203247;margin:12px 0;height:26px;overflow:hidden;border-radius:4px}#timeline span{flex:1;text-align:center;border-right:1px solid #5d7082;font:12px/26px monospace}#timeline i{position:absolute;background:#ffcb75;width:2px;height:100%;left:0}svg.staff{display:block;width:100%;height:96px;color:inherit}footer,.sub{display:none}details{margin:8px 0}.prompt{font-size:24px}.panel{margin-bottom:3px}#s-practice .split{gap:4px}#selectedTypes label{cursor:pointer}#s-practice .piano-scroll{margin:4px 0}[hidden]{display:none!important}#practiceLine{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}#practiceLine span{font:14px/1.3 ui-monospace,monospace;padding:5px 7px;color:#a8b3c4;border-bottom:2px solid transparent}#practiceLine .current{background:#243c54;color:white;border-color:#82caff}#practiceLine .passed{color:#88cfa1}#practiceLine .miss{color:#ffa49b;text-decoration:underline dotted}#piano button{touch-action:none}#s-practice .screen-actions{margin-top:6px}#practiceLine .staff{height:42px;width:82px}#practiceLine:has(.staff){gap:2px}#practiceLine span:has(.staff){padding:1px}.pitch-caption{display:block;text-align:center;line-height:1.4;font-size:14px}#practiceLine .pitch-caption{font-size:12px;max-width:110px}#practiceLine span:has(.pitch-caption){padding:3px 5px}#practiceLine .staff{margin:auto}#practiceLine.score{display:block;overflow-x:auto;max-width:100%;scrollbar-width:thin}#practiceLine.score svg{display:block;max-width:none}#s-practice:has(#tapControls:not([hidden])) #piano button{touch-action:pan-x}#tapControls{margin-top:8px}.staff-editor{grid-column:1/-1}.staff-paper{margin:8px auto;max-width:460px;position:relative}.answers .staff-slot{display:block;position:relative;width:100%;height:22px;min-height:22px;border:0;border-radius:0;padding:0;background:transparent;color:#86ceff;font-size:20px;line-height:22px;isolation:isolate}.staff-slot::before{content:"";position:absolute;top:50%;left:0;right:0;z-index:-1}.staff-rule::before{border-top:1px solid #a6b5c5}.staff-ledger::before{left:41%;right:41%;border-top:1px dashed #526170}.staff-slot:hover{background:#6b94c01a}.editor-clef{position:absolute;left:8px;font-size:54px;pointer-events:none;z-index:1}.accidental-menu{position:absolute;z-index:3;left:0;right:0;justify-content:center;background:var(--panel);padding:4px;border:1px solid var(--line)}.answers .accidental-menu button{min-height:36px;font-size:13px;padding:4px 7px}.accidental-menu [aria-pressed="true"]{background:#15518a}
+.practice-bar,.input-bar{display:flex;align-items:center;gap:8px}.practice-bar{padding:5px 0}.practice-bar strong{margin-right:auto}.practice-bar #qCount{white-space:nowrap;color:var(--muted)}#openOptions{font:24px/1 system-ui;padding:5px 10px}.input-bar #tapControls{margin-left:auto}.input-bar #inputNoteNames{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.playback-options{margin:12px 0}.playback-options label select{margin-left:5px}#practiceOptions{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;width:min(390px,94vw);max-height:88dvh;overflow:auto}#practiceOptions::backdrop{background:#0009}#practiceOptions h2{margin:0}#practiceOptions #guideText{max-height:32vh;overflow:auto}.practice-work #feedback{font-size:12px;margin:2px 0;padding:2px 5px;min-height:0}.practice-work #questionHelp:empty,.practice-work #timeline:empty,.practice-work #questionAnswers:empty{display:none}
+@media (orientation:landscape) and (max-height:620px){
+ body:has(#s-practice.active){overflow:hidden;padding:0}
+ body:has(#s-practice.active) header,main:has(#s-practice.active)>.progress{display:none}
+ main:has(#s-practice.active){width:100%;max-width:none;margin:0}
+ #s-practice.active{box-sizing:border-box;height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr);padding:2px max(6px,env(safe-area-inset-right)) max(2px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
+ .practice-bar{padding:0 0 3px;font-size:14px}.practice-bar button,.input-bar button,.input-bar select{min-height:34px;padding:4px 9px}
+ .practice-work.split{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) clamp(100px,38dvh,190px);gap:4px;align-items:stretch}
+ .practice-work:has(.instrument[hidden]){grid-template-rows:minmax(0,1fr)}
+ .practice-work>.panel{margin:0;padding:4px 6px;min-height:0}
+ .lesson-panel{display:grid;grid-template-rows:minmax(0,1fr) auto auto;grid-template-columns:minmax(0,1fr);gap:2px;overflow:hidden}
+ .lesson-panel:has(#questionAnswers:not(:empty)){grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:8px}
+ .lesson-panel .reading,.lesson-panel #questionAnswers{min-height:0;overflow:auto;overscroll-behavior:contain}
+ .lesson-panel #feedback,.lesson-panel #previousResult{grid-column:1/-1}.lesson-panel #practiceLine{margin:0 0 3px}.lesson-panel #practiceLine:not(.score){flex-wrap:nowrap;overflow:auto}.lesson-panel #practiceLine span{white-space:nowrap}
+ .lesson-panel .prompt{font-size:18px;margin:2px 0}.lesson-panel #timeline{height:20px;margin:3px 0}.lesson-panel #timeline span{line-height:20px}.lesson-panel #questionHelp{margin:0;font-size:12px}
+ .lesson-panel .answers{align-content:start;gap:4px}.lesson-panel .answers>button{min-height:36px;font-size:14px}.staff-editor .row:first-child{position:sticky;top:0;z-index:4;background:var(--panel)}
+ .instrument{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:2px}
+ #s-practice .instrument .piano-scroll{padding:0;margin:0;height:100%}
+ #s-practice .instrument .piano,#s-practice .instrument .white{height:100%}#s-practice .instrument .black{height:61%}
+ #s-practice .instrument .white .cap{bottom:18px}.input-bar{flex-wrap:nowrap}.input-bar #tapControls{margin-top:0;flex-wrap:nowrap}
+}
+.beginner-options{display:grid;gap:5px;margin-top:10px}.beginner-options .choice{padding:7px 9px;min-height:35px}.beginner-options .choice small{line-height:1.2}.beginner-options .tiny{margin:2px 0}.score-strip{display:flex;width:max-content}.score-strip .signature{position:sticky;left:0;z-index:1;background:var(--panel)}.entry-signs{position:absolute;left:0;top:0;height:100%;width:clamp(66px,23%,110px);fill:currentColor;pointer-events:none;z-index:1}.octave-signs{display:none}body:has(#repeatStaffSigns:checked) .octave-signs{display:inline}body:has(#repeatStaffSigns:checked) .standard-sign{display:none}#quizOptions,#selectedTypes{display:grid;grid-template-columns:minmax(0,1fr);gap:5px}#quizOptions .choice,#selectedTypes .choice{min-height:38px;padding:6px 10px}
+/* Responsive notation editor: staff geometry and noteheads are CSS/SVG, not device-dependent font bullets. */
+.staff-paper{width:min(100%,460px);margin:6px auto;isolation:isolate}
+.answers .staff-slot{height:var(--staff-step,22px);min-height:var(--staff-step,22px);line-height:var(--staff-step,22px);position:relative;overflow:visible;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.staff-slot::before{z-index:0;pointer-events:none}
+.staff-slot.staff-ledger::before{content:none}
+.staff-slot.staff-ledger.show-ledger::before{content:"";left:calc(62% - 18px);right:auto;width:36px;border-top:1.5px solid #a6b5c5}
+.staff-slot.staff-rule::before{border-top:1px solid #a6b5c5}
+.staff-slot[aria-pressed="true"]{background:#6db7ff0e}
+.placed-notes{position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:3px;z-index:2;pointer-events:none;white-space:nowrap}
+.note-mark{display:inline-flex;align-items:center;position:relative;gap:1px;min-width:16px;justify-content:center}
+.mark-accidental{color:#edf3fb;font-family:'Noto Music','Noto Sans Symbols 2','Segoe UI Symbol',serif;font-size:19px;line-height:1}
+.mark-head{display:inline-block;width:15px;height:10px;background:#86ceff;border-radius:50%;transform:rotate(-19deg);box-shadow:0 0 0 .3px #edf3fb}
+.entry-signs{left:0;top:0;width:220px;height:100%;overflow:visible;z-index:1}
+.staff-editor .row:first-child{z-index:5}
+.accidental-menu{max-width:100%;flex-wrap:wrap;left:0;right:0;top:0;z-index:7}
+@media(orientation:landscape) and (max-height:620px){.staff-paper{margin:2px auto}.staff-editor .row:first-child{position:static}}
+/* The result is retained on the NEXT question, even after a page/type transition. */
+.previous-result{grid-column:1/-1;min-width:0;font-size:12px;line-height:1.3;padding:4px 8px;border-left:3px solid #8393a5;color:var(--fg);background:transparent}
+.previous-result.good{border-left-color:var(--green);color:#a5efcc}
+.previous-result.bad{border-left-color:var(--red);color:#ffb7b7}
+.previous-result.skipped{border-left-color:var(--muted);color:var(--muted)}
+#finalLastResult{margin:6px 0 10px}
+@media (orientation:landscape) and (max-height:620px){.lesson-panel #previousResult{font-size:11px;padding:1px 5px}}
+</style>
+</head>
+<body>
+<header><div class="brand">Music Theory Trainer</div><div class="sub">Self-contained · Touch, keyboard and MIDI · No accounts or profiles</div></header>
+<main>
+<div class="progress"><i id="progressBar"></i></div>
+
+<!-- 1: Soundfont -->
+<section class="screen" id="s-sound">
+ <div class="step">Setup</div><h1>Load soundfont</h1>
+ <div class="panel">
+  <h2>Choose an instrument sound</h2>
+  <p class="muted">Load an uncompressed PCM .sf2 SoundFont. Samples play locally; unsupported compressed formats use the built-in fallback.</p>
+  <label class="choice" style="display:flex;flex-wrap:wrap"><span>SoundFont file (.sf2)</span><input id="sfFile" type="file" accept=".sf2"></label>
+  <div class="row" style="margin-top:10px"><span id="sfName" class="tiny">No SoundFont loaded · Synth fallback active</span><button id="previewTone">Preview sound</button></div>
+ </div>
+ <div class="screen-actions"><span></span><button class="primary" data-next="s-mode">Continue</button></div>
+</section>
+
+<!-- 2: Mode -->
+<section class="screen active" id="s-mode">
+ <div class="step">Setup</div><h1>Choose input mode</h1>
+ <div class="grid">
+  <label class="choice"><input type="radio" name="mode" value="touch" checked><span><b>Touch</b><small>Tap an on-screen piano</small></span></label>
+  <label class="choice"><input type="radio" name="mode" value="keyboard"><span><b>Keyboard</b><small>Use computer keycaps</small></span></label>
+  <label class="choice"><input type="radio" name="mode" value="midi"><span><b>MIDI</b><small>Use an external MIDI device</small></span></label>
+ </div>
+ <p class="tiny">Choose notes anywhere on the 88-key selector. During touch and keyboard practice, each page tests a two-octave range; the piano updates automatically as you advance.</p>
+ <div class="screen-actions"><button data-back="s-sound">Instrument sound</button><button class="primary" id="modeContinue">Continue</button></div>
+</section>
+
+<!-- 3: MIDI -->
+<section class="screen" id="s-midi">
+ <div class="step">Setup</div><h1>Select MIDI device</h1>
+ <div class="panel"><p>Connect your MIDI controller, then select its input.</p>
+  <div class="row"><button id="scanMidi">Scan for MIDI devices</button><select id="midiDevices"><option value="">No device selected</option></select></div>
+  <p id="midiInfo" class="tiny">MIDI requires a compatible browser and permission. If unavailable, go back and choose Touch or Keyboard.</p>
+ </div>
+ <div class="screen-actions"><button data-back="s-mode">Back</button><button class="primary" data-next="s-key">Continue</button></div>
+</section>
+
+<!-- 4: Practice key -->
+<section class="screen" id="s-key">
+ <div class="step">Setup</div><h1>Choose your practice key</h1>
+ <p class="muted">Choose how staff notation is displayed. Select the exact notes you want to practice on the following screens.</p>
+ <div class="panel">
+  <label class="choice"><input type="checkbox" id="lockCMajor" checked><span><b>Lock to C major</b><small>Keep a C-major key signature (no sharps or flats). Manually selected black keys appear as consistently spelled sharp accidentals (for example, C♯).</small></span></label>
+ </div>
+ <div class="screen-actions"><button type="button" id="keyBack">Back</button><button class="primary" data-next="s-intro">Continue</button></div>
+</section>
+
+<!-- 5: intro notes -->
+<section class="screen" id="s-intro">
+ <div class="step" id="introStep">Setup</div><h1>What notes do you want to introduce?</h1>
+ <p class="muted">Choose the notes being introduced in this learning session. Select “Skip this step” to introduce no new notes.</p>
+ <div class="split"><div class="panel"><div class="row between"><h2>88-key note selector</h2><button id="skipIntro" class="secondary">Skip this step</button></div><div class="picker-tools"><button data-pickscroll="intro" data-target="21">A0</button><button data-pickscroll="intro" data-target="60">C4</button><button data-pickscroll="intro" data-target="108">C8</button></div><div class="piano-scroll" id="introScroll"><div id="introNotes" class="piano piano-picker"></div></div></div><div class="panel"><h2>Selected introduction notes</h2><p class="tiny">Tap keys to select or deselect. Blue keys are selected.</p><div id="introSummary" class="picker-summary"></div><p class="tiny" id="introLimit"></p></div></div>
+ <div class="screen-actions"><button data-back="s-key">Back</button><button class="primary" data-next="s-pool">Continue</button></div>
+</section>
+
+<!-- 6: pool -->
+<section class="screen" id="s-pool">
+ <div class="step">Setup</div><h1>What other notes do you want to be tested on?</h1>
+ <p class="muted">Select additional notes from anywhere on the piano. Introductory notes are included automatically; practice pages will use two-octave windows.</p>
+ <div class="split"><div class="panel"><div class="row between"><h2>88-key note selector</h2><button id="allNotes" class="secondary">Select range</button></div><div class="picker-tools"><button data-pickscroll="pool" data-target="21">A0</button><button data-pickscroll="pool" data-target="60">C4</button><button data-pickscroll="pool" data-target="108">C8</button></div><div class="piano-scroll" id="poolScroll"><div id="poolNotes" class="piano piano-picker"></div></div></div><div class="panel"><h2>Additional test notes</h2><p class="tiny" id="rangeNote">Select any notes across the full 88-key range. Touch and keyboard exercises show two octaves per practice page and advance between note ranges.</p><div id="poolSummary" class="picker-summary"></div><p class="tiny" id="poolLimit"></p>
+</div></div>
+ <div class="screen-actions"><button data-back="s-intro">Back</button><button class="primary" data-next="s-quiztypes">Continue</button></div>
+</section>
+
+<!-- 7: quiz types -->
+<section class="screen" id="s-quiztypes">
+ <div class="step">Setup</div><h1>How do you want to be quizzed?</h1>
+ <div class="panel"><div class="grid" id="quizOptions">
+  <label class="choice"><input type="checkbox" value="play-sheet" checked><span><b>Play the sheet music</b><small>Read staff notation and perform it</small></span></label>
+  <label class="choice"><input type="checkbox" value="play-notation" checked><span><b>Play intervals &amp; chords</b><small>Play named intervals (minor/major seconds, thirds, etc.) and chord symbols such as Csus2</small></span></label>
+  <label class="choice"><input type="checkbox" value="play-ear" checked><span><b>Play by ear</b><small>Listen to a short group of up to three questions, then play the notes</small></span></label>
+  <label class="choice"><input type="checkbox" value="to-sheet" checked><span><b>Transcribe to sheet</b><small>Represent pitches on a staff</small></span></label>
+  <label class="choice"><input type="checkbox" value="to-notation" checked><span><b>Transcribe intervals &amp; chords</b><small>Identify the starting pitch and interval, or the chord with its root pitch</small></span></label>
+  <label class="choice"><input type="checkbox" value="to-note" checked><span><b>Transcribe to note(s)</b><small>Identify individual pitches and every note in a sounding chord</small></span></label>
+  <label class="choice"><input type="checkbox" value="scales"><span><b>Scales</b><small>Identify and construct scales</small></span></label>
+ </div><p class="tiny">Selected exercises run in this fixed top-to-bottom order. Play by ear uses groups of up to 3 questions without shortening the exercise. Uncheck a type to skip it; Shuffle only changes questions within each type.</p></div>
+ <div class="screen-actions"><button data-back="s-pool">Back</button><button class="primary" data-next="s-exercises">Continue</button></div>
+</section>
+
+<!-- 8: exercise launcher -->
+<section class="screen" id="s-exercises">
+ <div class="step">Setup</div><h1>Exercises</h1>
+ <div class="panel"><h2>Exercise order (top to bottom)</h2><div id="selectedTypes" class="symbols"></div><p class="tiny">Checked exercises run in the same order shown above, regardless of the order in which you checked them.</p>
+ <div class="row" style="margin-top:14px"><label class="choice"><input type="checkbox" id="shuffle"><span><b>Shuffle</b><small>Shuffle questions within each exercise</small></span></label></div>
+ </div>
+ <div class="panel"><h2>Choose an entry point</h2><div class="grid">
+  <button class="primary" id="revealBtn">Reveal · New material</button>
+  <button id="introBtn">Introduction · Guided learning</button>
+  <button id="utilBtn">Utilization · Mixed practice</button>
+  <button id="weakBtn">Weaknesses · Targeted practice</button>
+ </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, chord, and scale three times in a row, then reviews every item once per round for eight shuffled rounds. The question total grows before Reveal ends. Introduction remains a 72-question guided stage when new notes are selected. Completion indicators last only for this session.</p></div>
+ <div class="screen-actions"><button data-back="s-quiztypes">Back</button><button class="secondary" data-next="s-intro">Edit note introduction</button></div>
+</section>
+
+<!-- Practice -->
+<section class="screen" id="s-practice">
+ <div class="practice-bar">
+  <strong id="exerciseLabel"></strong><span id="qCount"></span>
+  <button id="playQuestion" aria-label="Replay exercise">▶ Replay</button>
+  <button id="nextQuestion" hidden>Next</button>
+  <button id="openOptions" aria-label="Practice options" title="Practice options" aria-haspopup="dialog">⚙</button>
+ </div>
+ <div class="split practice-work">
+  <div class="panel lesson-panel">
+   <div class="reading"><div id="practiceLine" aria-label="Practice page"></div>
+    <div id="questionPrompt" class="prompt"></div><p id="questionHelp" class="muted"></p><div id="timeline"></div>
+   </div>
+   <div id="questionAnswers" class="answers"></div>
+   <div id="previousResult" class="previous-result" role="status" aria-live="polite" hidden></div>
+   <div id="feedback" role="status" aria-live="polite"></div>
+  </div>
+  <div class="panel instrument">
+   <div class="piano-scroll"><div id="piano" class="piano"></div></div>
+   <div class="input-bar"><span class="tiny" id="windowRange" aria-label="Automatic two-octave practice range"></span><span class="tiny" id="inputNoteNames"></span>
+    <div id="tapControls" class="row" hidden><button id="resetTap">Clear</button><button id="submitTap" class="primary" disabled>Submit</button></div>
+   </div>
+  </div>
+ </div>
+ <dialog id="practiceOptions" aria-labelledby="optionsTitle">
+  <div class="row between"><h2 id="optionsTitle">Practice options</h2><form method="dialog"><button autofocus>Done</button></form></div>
+  <div class="tiny"><span id="stageLabel"></span> · <span id="inputModeLabel"></span></div>
+   <div class="beginner-options">
+    <label class="choice"><input type="checkbox" id="practiceLockCMajor"><span><b>Lock to C major</b><small>Use a C-major staff, including any manually selected black keys as accidentals.</small></span></label>
+    <div class="row between"><span class="tiny">Changes restart the exercise.</span><button type="button" id="applyBeginnerSettings">Apply &amp; restart</button></div>
+   </div>
+  <label class="choice"><input id="repeatStaffSigns" type="checkbox"><span>Show key-signature signs in every octave</span></label>
+  <div class="row playback-options"><label>Beat <select id="beat"><option value="1200">Slow</option><option selected value="900">Steady</option><option value="650">Brisk</option></select></label><label>Chunk <select id="chunk"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label></div>
+  <p class="tiny" id="keyLegend"></p><details id="guide"><summary>Notation answer key</summary><div id="guideText"></div></details>
+  <div class="row"><button id="backExercises">Choose exercises</button><button id="endPractice">End exercise</button></div>
+  <button id="clearPiano" hidden>Clear input</button><button id="revealAnswer" hidden>Show answer</button>
+ </dialog>
+</section>
+
+<!-- Finished -->
+<section class="screen" id="s-finished">
+ <div class="step">Session complete</div><h1>Testing finished</h1>
+  <div class="panel"><div class="prompt" id="finalAccuracy">0%</div><p id="finalStats" class="muted"></p><div id="finalLastResult" class="previous-result" hidden></div><h2>What next?</h2>
+ <div class="grid">
+  <button class="primary" id="returnExercises">Choose exercises</button>
+  <button id="repeatWeak">Practice weaknesses</button>
+  <button id="introduceMore">Introduce new notes</button>
+  <button id="changeModes">Change modes</button>
+ </div></div>
+</section>
+</main>
+<footer>All configuration and exercise state stays in this browser tab. No accounts, profiles, remote services, or cloud saving. SoundFont PCM samples play locally when supported; otherwise synthesized fallback is used.</footer>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id),N=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"],FLAT={1:"D♭",3:"E♭",6:"G♭",8:"A♭",10:"B♭"};
+const chordDefs=[
+ ["","major",[0,4,7]],["m","minor",[0,3,7]],["sus2","suspended 2nd",[0,2,7]],["sus4","suspended 4th",[0,5,7]],
+ ["dim","diminished",[0,3,6]],["aug","augmented",[0,4,8]],["5","power chord",[0,7]],["6","major 6th",[0,4,7,9]],
+ ["m6","minor 6th",[0,3,7,9]],["7","dominant 7th",[0,4,7,10]],["maj7","major 7th",[0,4,7,11]],
+ ["m7","minor 7th",[0,3,7,10]],["m7♭5","half-diminished 7th",[0,3,6,10]],["dim7","diminished 7th",[0,3,6,9]],
+ ["add9","added 9th",[0,4,7,14]],["9","dominant 9th",[0,4,7,10,14]]
+];
+let mode="touch",intro=new Set(),pool=new Set(),skipIntro=false,stage="UTILIZATION";
+let questions=[],qi=0,correct=0,done=false,selected=new Set(),audio=null,master=null,playbackBus=null,midi=null,midiInput=null,results=[];
+// A firmer note-on than the original velocity 100; applies to SoundFont samples and synth loudness.
+const NOTE_VELOCITY=120,VELOCITY_GAIN=NOTE_VELOCITY/100;
+const noteName=m=>N[(m%12+12)%12]+(Math.floor(m/12)-1),pc=m=>(m%12+12)%12;
+function show(id){if($("practiceOptions").open)$("practiceOptions").close();if(id==="practice")renderPiano();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$("s-"+id).classList.add("active");let order=["sound","mode","midi","key","intro","pool","quiztypes","exercises","practice","finished"],i=order.indexOf(id);$("progressBar").style.width=(Math.max(0,i)/8*100)+"%";window.scrollTo(0,0)}
+const MASTER_GAIN=.9;
+function ctx(){if(!audio){
+ audio=new(window.AudioContext||window.webkitAudioContext)();
+ master=audio.createGain();master.gain.value=MASTER_GAIN;master.connect(audio.destination);
+ // Live instrument notes connect directly to master; only lesson playback uses
+ // this disposable bus. Advancing a question must not mute a just-played key.
+ playbackBus=audio.createGain();playbackBus.connect(master);
+ }if(audio.state==="suspended")audio.resume()}
+function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false){
+ ctx();const t=(baseTime??audio.currentTime)+delay;
+ const output=lessonPlayback?playbackBus:master;
+ if(soundfont&&sampleTone(m,d,t,output))return;
+ let o=audio.createOscillator(),g=audio.createGain();o.type="triangle";o.frequency.value=440*Math.pow(2,(m-69)/12);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.65*VELOCITY_GAIN,t+.015);
+ g.gain.exponentialRampToValueAtTime(.0001,t+d);
+ o.connect(g);g.connect(output);o.start(t);o.stop(t+d+.03);
+}
+function sampleTone(m,d,start,output){
+ const preset=soundfont.presets.find(p=>p.zones.some(z=>m>=z.low&&m<=z.high));
+ if(!preset)return false;
+ let played=false;
+ for(const zone of preset.zones){
+  if(m<zone.low||m>zone.high||NOTE_VELOCITY<zone.vlow||NOTE_VELOCITY>zone.vhigh)continue;
+  playSampleVoice(zone,zone.sample,m,d,start,false,output);
+  if(zone.partner)playSampleVoice(zone,zone.partner,m,d,start,true,output);
+  played=true;
+ }
+ return played;
+}
+function playSampleVoice(zone,sample,note,duration,start,partner,output){
+ const rate=sample.rate||44100,frames=sample.end-sample.start;
+ const cacheKey=sample.start+":"+frames+":"+rate;
+ let buffer=sfBuffers.get(cacheKey);
+ if(!buffer){
+  buffer=audio.createBuffer(1,frames,rate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<frames;i++)data[i]=soundfont.pcm[sample.start+i]/32768;
+  sfBuffers.set(cacheKey,buffer);
+ }
+ const source=audio.createBufferSource(),gain=audio.createGain(),pan=audio.createStereoPanner();
+ source.buffer=buffer;
+ const root=zone.g[58]??sample.pitch;
+ source.playbackRate.value=2**((note-root+zone.tune/100-(sample.correction||0)/100)/12);
+ const loopStart=sample.loopStart-sample.start,loopEnd=sample.loopEnd-sample.start;
+ if((zone.g[54]===1||zone.g[54]===3)&&loopStart>=0&&loopEnd<=frames&&loopEnd>loopStart){
+  source.loop=true;source.loopStart=loopStart/rate;source.loopEnd=loopEnd/rate;
+ }
+ const defaultPan=sample.type===4?-1:sample.type===2?1:0;
+ pan.pan.value=zone.pan===null?defaultPan:Math.max(-1,Math.min(1,(partner?-1:1)*zone.pan/500));
+ const level=.7*VELOCITY_GAIN*10**(-zone.attenuation/200);
+ gain.gain.setValueAtTime(.0001,start);
+ gain.gain.linearRampToValueAtTime(level,start+.003);
+ gain.gain.setValueAtTime(level,start+Math.max(.03,duration-.09));
+ gain.gain.linearRampToValueAtTime(.0001,start+duration);
+ source.connect(gain);gain.connect(pan);pan.connect(output);
+ source.start(start);source.stop(start+duration+.03);
+}
+function chord(q){ctx();const start=audio.currentTime;q.notes.forEach(m=>tone(m,.85,0,start))}
+const isBlack=m=>[1,3,6,8,10].includes(pc(m));
+const WHITE_WIDTH=38, BLACK_WIDTH=24;
+function whiteIndex(m){let n=0;for(let i=Math.min(21,m);i<Math.max(21,m);i++)if(!isBlack(i))n++;return m<21?-n:n}
+function keycapFor(m,base){let white1="qwertyu",white2="zxcvbnm",black1={1:"2",3:"3",6:"5",8:"6",10:"7"},black2={1:"s",3:"d",6:"g",8:"h",10:"j"};let oct=Math.floor((m-base)/12),relative=pc(m);if(oct<0||oct>1)return "";if(isBlack(m))return (oct===0?black1:black2)[relative]||"";let index=[0,2,4,5,7,9,11].indexOf(relative);return (oct===0?white1:white2)[index]||""}
+function buildKeys(el,first,last,onHit,active,showCaps=false){el.innerHTML="";let whites=0;const keys=[];for(let m=first;m<=last;m++){if(isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="white";b.style.left=(whites*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?"U / A":keycapFor(m,first)):""}</span><span>${noteName(m)}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b);whites++}for(let m=first;m<=last;m++){if(!isBlack(m))continue;let b=document.createElement("button");b.type="button";b.className="black";b.style.left=((whiteIndex(m)-whiteIndex(first))*WHITE_WIDTH)+"px";b.dataset.midi=m;b.setAttribute("aria-label",noteName(m));b.innerHTML=`<span class="cap">${showCaps?(m===first+11?"U / A":keycapFor(m,first)):""}</span>`;b.onclick=()=>onHit(m);el.append(b);keys.push(b)}el.style.width=(whites*WHITE_WIDTH)+"px";keys.forEach(b=>b.classList.toggle("picked",active.has(+b.dataset.midi)));return keys}
+function allowedAdd(set,m){return m>=21&&m<=108}
+function renderNoteChecks(id,set){let name=id==="introNotes"?"intro":"pool",el=$(id);buildKeys(el,21,108,m=>{if(set.has(m))set.delete(m);else if(allowedAdd(set,m)){set.add(m);tone(m,.3)}renderNoteChecks(id,set)},set);$(name+"Summary").textContent=[...set].sort((a,b)=>a-b).map(noteName).join(" · ")||"No notes selected";$(name+"Limit").textContent=`${set.size} notes selected · full 88-key range`;}
+function scrollPicker(which,m){let el=$(which+"Scroll");el.scrollLeft=Math.max(0,whiteIndex(m)*WHITE_WIDTH-el.clientWidth/3)}
+document.querySelectorAll("[data-pickscroll]").forEach(b=>b.onclick=()=>scrollPicker(b.dataset.pickscroll,+b.dataset.target));
+renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);
+requestAnimationFrame(()=>{scrollPicker("intro",60);scrollPicker("pool",60)});
+let soundfont=null,sfBuffers=new Map();
+function parseSF2(buffer){let dv=new DataView(buffer),u16=o=>dv.getUint16(o,true),i16=o=>dv.getInt16(o,true),u32=o=>dv.getUint32(o,true),tag=o=>String.fromCharCode(...new Uint8Array(buffer,o,4));if(tag(0)!=="RIFF"||tag(8)!=="sfbk")throw Error("Not an SF2 RIFF soundbank");let chunks={},walk=(a,z)=>{let pos=a;while(pos+8<=z){let id=tag(pos),len=u32(pos+4),begin=pos+8,end=begin+len;if(end>buffer.byteLength)break;if(id==="LIST")walk(begin+4,end);else chunks[id]={begin,len};pos=end+(len&1)}};walk(12,buffer.byteLength);
+for(let id of ["smpl","phdr","pbag","pgen","inst","ibag","igen","shdr"])if(!chunks[id])throw Error("Missing SF2 chunk "+id);
+const records=(id,size,fn)=>{let c=chunks[id],a=[];for(let o=c.begin;o+size<=c.begin+c.len;o+=size)a.push(fn(o));return a};
+let phdr=records("phdr",38,o=>({name:new TextDecoder().decode(new Uint8Array(buffer,o,20)).replace(/\0.*$/,""),bag:u16(o+24)}));let pbag=records("pbag",4,o=>({gen:u16(o)}));let pgen=records("pgen",4,o=>({op:u16(o),val:u16(o+2)}));let inst=records("inst",22,o=>({bag:u16(o+20)}));let ibag=records("ibag",4,o=>({gen:u16(o)}));let igen=records("igen",4,o=>({op:u16(o),val:u16(o+2)}));let shdr=records("shdr",46,o=>({start:u32(o+20),end:u32(o+24),loopStart:u32(o+28),loopEnd:u32(o+32),rate:u32(o+36),pitch:new Uint8Array(buffer,o+40,1)[0],correction:new Int8Array(buffer,o+41,1)[0],link:u16(o+42),type:u16(o+44)}));
+const genMap=(gens,start,end)=>{let obj={};for(let i=start;i<end;i++){let g=gens[i];if(g)obj[g.op]=g.val}return obj};
+const zoneList=(bags,gens,start,end)=>{let a=[];for(let i=start;i<end;i++)a.push(genMap(gens,bags[i].gen,bags[i+1].gen));return a};
+const range=(g,k)=>g[k]===undefined?[0,127]:[g[k]&255,g[k]>>8];let presets=[];
+for(let pi=0;pi<phdr.length-1;pi++){let pzones=zoneList(pbag,pgen,phdr[pi].bag,phdr[pi+1].bag),globalP={};let zones=[];for(let pz of pzones){if(pz[41]===undefined){globalP={...globalP,...pz};continue}let ix=pz[41];if(ix>=inst.length-1)continue;let izones=zoneList(ibag,igen,inst[ix].bag,inst[ix+1].bag),globalI={};const sampleIds=new Set(izones.map(z=>z[53]));for(let iz of izones){if(iz[53]===undefined){globalI={...globalI,...iz};continue}let g={...globalP,...pz,...globalI,...iz},sample=shdr[g[53]];if(!sample||sample.end<=sample.start||sample.end*2>chunks.smpl.len)continue;const presetGen={...globalP,...pz},instrumentGen={...globalI,...iz};
+ const signed=value=>(value||0)<<16>>16;
+ const sum=op=>signed(presetGen[op])+signed(instrumentGen[op]);
+ const linked=shdr[sample.link];
+ const partner=linked && ((sample.type===2&&linked.type===4)||(sample.type===4&&linked.type===2)) &&
+  linked.link===g[53] && !sampleIds.has(sample.link) && linked.end>linked.start && linked.end*2<=chunks.smpl.len?linked:null;
+ const pan=g[17]===undefined?null:sum(17);
+ const r1=range(presetGen,43),r2=range(instrumentGen,43),v1=range(presetGen,44),v2=range(instrumentGen,44);
+ zones.push({g,sample,partner,pan,attenuation:Math.max(0,sum(48)),tune:sum(51)*100+sum(52),low:Math.max(r1[0],r2[0]),high:Math.min(r1[1],r2[1]),vlow:Math.max(v1[0],v2[0]),vhigh:Math.min(v1[1],v2[1])})}}presets.push({name:phdr[pi].name,zones})}
+let pcm=new Int16Array(buffer,chunks.smpl.begin,chunks.smpl.len>>1);return{presets,pcm}}
+async function loadSoundFont(file){$("sfName").textContent="Parsing "+file.name+"…";try{let buf=await file.arrayBuffer();soundfont=parseSF2(buf);sfBuffers.clear();let count=soundfont.presets.reduce((n,p)=>n+p.zones.length,0);if(!count)throw Error("No playable sample zones");$("sfName").textContent=`Loaded ${file.name} · ${soundfont.presets.length} presets · ${count} sample zones`;$("sfName").style.color="var(--green)"}catch(e){soundfont=null;$("sfName").textContent="Could not load SoundFont: "+e.message+" · synth fallback";$("sfName").style.color="var(--red)"}}
+$("sfFile").addEventListener("change",e=>{let f=e.target.files[0];if(f)loadSoundFont(f)});
+$("previewTone").onclick=()=>tone(60);
+$("skipIntro").onclick=()=>{intro.clear();skipIntro=true;renderNoteChecks("introNotes",intro)};
+$("allNotes").onclick=()=>{pool=new Set(Array.from({length:88},(_,i)=>21+i));renderNoteChecks("poolNotes",pool)};
+document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",()=>mode=r.value));
+$("keyBack").onclick=()=>show(mode==="midi"?"midi":"mode");
+$("modeContinue").onclick=()=>{mode=document.querySelector('input[name="mode"]:checked').value;renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);$("allNotes").hidden=false;if(mode==="midi"){show("midi");scanMidi()}else show("key")};
+async function scanMidi(){if(!navigator.requestMIDIAccess){$("midiInfo").textContent="Web MIDI is unavailable in this browser. Try a supported desktop browser or choose Touch/Keyboard.";return}
+ try{midi=await navigator.requestMIDIAccess();let sel=$("midiDevices");sel.innerHTML="";[...midi.inputs.values()].forEach(x=>{let o=document.createElement("option");o.value=x.id;o.textContent=x.name||"MIDI input";sel.append(o)});$("midiDevices").onchange();$("midiInfo").textContent=sel.options.length?"Choose your MIDI input.":"No MIDI input devices detected."}catch(e){$("midiInfo").textContent="MIDI permission was denied or unavailable."}}
+$("scanMidi").onclick=scanMidi;
+$("midiDevices").onchange=()=>{if(!midi)return;if(midiInput)midiInput.onmidimessage=null;midiInput=midi.inputs.get($("midiDevices").value);if(midiInput)midiInput.onmidimessage=e=>{let [s,n,v]=e.data;if(mode==="midi"&&$("s-practice").classList.contains("active")){const key="midi:"+s%16+":"+n;if((s&240)===144&&v>0)enter(n,key);else if((s&240)===128||((s&240)===144&&!v))release(key)}}};
+document.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{let dest=b.dataset.next;if(b.closest("#s-midi")&&!midiInput){$("midiInfo").textContent="Select a connected input first.";return}if(dest==="s-pool"){renderNoteChecks("poolNotes",pool)}if(dest==="s-quiztypes"&&!roots().length){$("poolLimit").textContent="Select at least one note to continue.";return}if(dest==="s-exercises")renderSelectedTypes();show(dest.slice(2))});
+document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back.slice(2)));
+// Only the GUI's DOM order controls exercise sequencing, never selection timing.
+const exerciseOrder=[...document.querySelectorAll('#quizOptions input')].map(x=>x.value);
+function chosenTypes(){const checked=new Set([...document.querySelectorAll('#quizOptions input:checked')].map(x=>x.value));return exerciseOrder.filter(type=>checked.has(type))}
+function roots(){return [...new Set([...pool,...intro])].sort((a,b)=>a-b)}
+// The C-major lock changes staff notation only. Note selection always controls the tested pitches.
+function practiceRoots(){return roots()}
+function possibleChords(notes=practiceRoots()){let out=[],allowed=new Set(notes);notes.forEach(root=>chordDefs.forEach(([suffix,name,ints])=>{let ns=ints.map(x=>root+x);if(ns.every(n=>allowed.has(n)))out.push({root,suffix,name,ints,notes:ns,symbol:N[pc(root)]+suffix})}));return out}
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]]}return b}
+const setups=new Map(),timers=[];
+let history=[],completed=new Set();
+function syncSetup(){
+ const ordered=set=>[...set].sort((a,b)=>a-b);
+ const key=JSON.stringify([mode,ordered(intro),ordered(pool),chosenTypes().sort(),$("lockCMajor").checked]);
+ if(!setups.has(key))setups.set(key,{history:[],completed:new Set()});
+ ({history,completed}=setups.get(key));
+ for(const [s,id] of Object.entries(stages)){
+  const btn=$(id);btn.textContent=(completed.has(s)?"✓ ":"")+btn.textContent.replace(/^✓ /,"");
+ }
+ $("weakBtn").disabled=!history.some(x=>!x.ok);
+}
+const stages={REVEAL:"revealBtn",INTRODUCTION:"introBtn",UTILIZATION:"utilBtn",WEAKNESSES:"weakBtn"};
+const titles=Object.fromEntries([...document.querySelectorAll("#quizOptions input")].map(x=>[x.value,x.parentElement.querySelector("b").textContent]));
+const intervals=["unison","minor second","major second","minor third","major third","perfect fourth","tritone","perfect fifth","minor sixth","major sixth","minor seventh","major seventh","octave"];
+let started=0, cursor=0, animation=0;
+function renderSelectedTypes(){
+ const box=$("selectedTypes");box.replaceChildren();$("exerciseWarning").hidden=true;
+ for(const original of document.querySelectorAll("#quizOptions input")){
+  const label=document.createElement("label"), input=document.createElement("input");
+  label.className="choice";input.type="checkbox";input.checked=original.checked;
+  input.onchange=()=>{original.checked=input.checked;syncSetup()};label.append(input,titles[original.value]);box.append(label);
+ }
+ syncSetup();
+}
+function materials(notes=practiceRoots()){
+ const items=notes.map(n=>({notes:[n],symbol:noteName(n),kind:"note"}));
+ for(const n of notes)for(const m of notes)if(m>n&&m-n<=12)items.push({notes:[n,m],symbol:noteName(n)+" + "+intervals[m-n],kind:"interval"});
+ for(const q of possibleChords(notes))items.push({...q,symbol:q.symbol+" ("+noteName(q.root)+")",kind:"chord"});
+ for(const n of notes)for(const [name,steps] of ($("lockCMajor").checked?[["major",[0,2,4,5,7,9,11,12]]]:[["major",[0,2,4,5,7,9,11,12]],["natural minor",[0,2,3,5,7,8,10,12]],["major pentatonic",[0,2,4,7,9,12]]])){
+  const ns=steps.map(i=>n+i);if((!$("lockCMajor").checked||pc(n)===0)&&ns.every(m=>notes.includes(m)))items.push({notes:ns,symbol:noteName(n)+" "+name,kind:"scale"});
+ }return items;
+}
+const signature=q=>q.notes.join(",");
+const pageSize=16, held=new Map();
+let pageBases=[],lessonPages=[],revealState=null;
+const inWindow=(q,base)=>q.notes.every(n=>n>=base&&n<base+24);
+function practiceWindowStarts(notes){
+ const remain=[...new Set(notes)].sort((a,b)=>a-b),bases=[];
+ while(remain.length){
+  const first=remain[0],base=Math.min(96,Math.max(12,Math.floor(first/12)*12));
+  bases.push(base);
+  while(remain.length&&remain[0]<base+24)remain.shift();
+ }
+ return bases;
+}
+function practicePageInfo(index=qi){
+ if(lessonPages.length){
+  const number=lessonPages.findIndex(p=>index>=p.start&&index<p.end);
+  if(number>=0)return {...lessonPages[number],number};
+ }
+ const number=Math.floor(index/pageSize);
+ return {number,start:number*pageSize,end:Math.min(questions.length,(number+1)*pageSize),base:pageBases[number]??48};
+}
+function currentPageBase(){return practicePageInfo().base;}
+let renderedPianoBase=null;
+function currentWindowNotes(){const base=currentPageBase();return mode==="midi"?practiceRoots():practiceRoots().filter(n=>n>=base&&n<base+24);}
+let fresh=false, peak=[];
+// Each first note encounter unlocks combinations with previously known pitches.
+const revealNote=n=>({kind:"note",notes:[n],symbol:noteName(n)});
+const revealId=q=>q.kind==="chord"?"chord:"+q.root+":"+q.suffix+":"+signature(q):q.kind+":"+signature(q);
+function revealBaseFor(notes,preferred){
+ if(mode==="midi")return 48;
+ const bases=Array.from({length:8},(_,i)=>12+i*12)
+  .filter(base=>notes.every(n=>n>=base&&n<base+24));
+ if(!bases.length)return null;
+ if(bases.includes(preferred))return preferred;
+ return bases.reduce((best,base)=>Math.abs(base-preferred)<Math.abs(best-preferred)?base:best,bases[0]);
+}
+function revealQuestion(q,phase){
+ const {exposure,...material}=q;
+ return {...material,type:q.kind==="note"?"play-sheet":q.kind==="scale"?"scales":"play-notation",revealPhase:phase};
+}
+function rebuildRevealPages(){
+ lessonPages=[];pageBases=[];
+ let preferred=mode==="midi"?48:(revealBaseFor(questions[0]?.notes||[60],48)??48);
+ for(let i=0;i<questions.length;i++){
+  const q=questions[i];
+  let page=lessonPages.at(-1);
+  const base=page&&page.end-page.start<pageSize&&inWindow(q,page.base)
+   ?page.base:revealBaseFor(q.notes,preferred);
+  // Any playable 88-key pitch can be represented by the two-octave keyboard.
+  if(base===null)throw Error("Reveal question cannot fit a keyboard window");
+  if(!page||page.base!==base||page.end-page.start>=pageSize){
+   page={start:i,end:i,base};
+   lessonPages.push(page);pageBases.push(base);
+  }
+  page.end++;
+  preferred=base;
+ }
+ pageStaffs.clear();
+}
+function initReveal(){
+ const focus=(intro.size?[...intro]:practiceRoots()).sort((a,b)=>a-b);
+ const known=new Set(intro.size?[...pool].filter(n=>!intro.has(n)):[]);
+ revealState={focus,known,introduced:new Set(),discovered:new Set(),
+  noteReviews:new Set(),chordReviews:new Set(),pendingReviews:[],phase:"introducing",additions:0};
+ // Show the full initial note-introduction count. Chords join the queue as
+ // their notes become known; reinforcement is added before the lesson ends.
+ questions=focus.flatMap(n=>revealExposures(revealNote(n),"meet"));
+ rebuildRevealPages();
+}
+const revealReviewRounds=8;
+function revealExposures(q,phase){
+ return Array.from({length:3},(_,i)=>({...revealQuestion(q,phase),exposure:i+1}));
+}
+function revealInsertable(slot,q){
+ const before=questions[slot-1],after=questions[slot];
+ if(after?.exposure>1)return false;
+ if(before&&revealId(before)===revealId(q))return false;
+ if(after&&revealId(after)===revealId(q))return false;
+ return true;
+}
+function scheduleRevealMaterial(q){
+ const item=revealQuestion(q,"material-meet"),start=qi+1,last=questions.length;
+ const nearby=[],fallback=[];
+ for(let slot=start;slot<=last;slot++){
+  if(!revealInsertable(slot,item))continue;
+  fallback.push(slot);
+  if(slot-start<=4)nearby.push(slot);
+ }
+ const slots=nearby.length?nearby:fallback;
+ const slot=slots.length?slots[Math.floor(Math.random()*slots.length)]:last;
+ const batch=revealExposures(q,"material-meet");
+ questions.splice(slot,0,...batch);
+ revealState.additions+=batch.length;
+ rebuildRevealPages();
+}
+function completeReveal(q){
+ const state=revealState;
+ if(!state||state.phase!=="introducing")return;
+ if(q.revealPhase==="meet"){
+  const n=q.notes[0];
+  if(state.introduced.has(n))return;
+  state.known.add(n);state.introduced.add(n);
+  if(!state.noteReviews.has(n)){
+   state.noteReviews.add(n);
+   state.pendingReviews.push(revealQuestion(revealNote(n),"reinforce"));
+  }
+  const unlocked=materials([...state.known].sort((a,b)=>a-b)).filter(item=>
+   item.kind!=="note" && item.notes.includes(n) && !state.discovered.has(revealId(item)) &&
+   revealBaseFor(item.notes,currentPageBase())!==null);
+  for(const item of shuffle(unlocked)){
+   state.discovered.add(revealId(item));
+   scheduleRevealMaterial(item);
+  }
+ }else if(q.revealPhase==="material-meet"){
+  const id=revealId(q);
+  if(!state.chordReviews.has(id)){
+   state.chordReviews.add(id);
+   state.pendingReviews.push(revealQuestion(q,"material-reinforce"));
+  }
+ }
+}
+function beginRevealReinforcement(){
+ const state=revealState;
+ if(!state||state.phase!=="introducing")return;
+ state.phase="reinforcement";
+ // A separate, clearly labelled phase; both notes and chords are randomized.
+ const tasks=[];
+ for(let round=0;round<revealReviewRounds;round++){
+  const batch=shuffle(state.pendingReviews);
+  const previous=tasks.at(-1) || questions.at(-1);
+  if(batch.length>1 && revealId(batch[0])===revealId(previous)){
+   [batch[0],batch[1]]=[batch[1],batch[0]];
+  }
+  for(const item of batch)tasks.push({...item});
+ }
+ state.pendingReviews=[];
+ questions=questions.concat(tasks);
+ state.additions+=tasks.length;
+ rebuildRevealPages();
+}
+// Build whole sections in the order of the GUI, instead of creating a mixed
+// session and trying to sort it afterward. Every enabled type gets its own
+// contiguous section. If it cannot run, do not silently jump to another type.
+function exerciseCandidates(items,type){
+ // Symbol exercises assess harmonic relationships, not isolated note names.
+ const symbolExercise=type==="play-notation"||type==="to-notation";
+ const candidates=items.filter(q=>symbolExercise?["interval","chord"].includes(q.kind):type==="scales"?q.kind==="scale":type==="to-note"?["note","chord"].includes(q.kind):q.kind!=="scale");
+ return ($("shuffle").checked?shuffle(candidates):candidates).map(q=>({...q,type,symbol:type==="play-notation"&&q.kind==="chord"?N[pc(q.root)]+q.suffix:q.symbol}));
+}
+function scheduleOrderedExercises(types,source,total){
+ const bases=mode==="midi"?[48]:practiceWindowStarts(practiceRoots());
+ const byType=types.map(type=>({type,windows:bases.map(base=>({base,candidates:exerciseCandidates(source.filter(q=>mode==="midi"||inWindow(q,base)),type)})).filter(window=>window.candidates.length)}));
+ const missing=byType.filter(group=>!group.windows.length);
+ if(missing.length){
+  const harmonicTypes=missing.some(group=>group.type==="play-notation"||group.type==="to-notation");
+  const names=missing.map(group=>titles[group.type]).join(", ");
+  const explanation=harmonicTypes?" Select two pitches up to an octave apart for an interval, or every pitch of a chord (for example, C4, E4, G4).":" Add matching notes or change the selected exercises.";
+  const warning=$("exerciseWarning");
+  warning.textContent="Cannot begin in the selected order: no available material for "+names+"."+explanation+" Uncheck unavailable exercises or edit your note pool.";
+  warning.hidden=false;
+  return false;
+ }
+ if(!types.length){
+  const warning=$("exerciseWarning");warning.textContent="Select at least one exercise type.";warning.hidden=false;return false;
+ }
+ questions=[];lessonPages=[];pageBases=[];
+ const noteAppearances=new Map([...intro].map(n=>[n,0]));
+ let previousQuestion=null;
+ const chooseQuestions=(candidates,count)=>{
+  const out=[];
+  const mixedSymbols=["play-notation","to-notation","to-note"].includes(candidates[0]?.type);
+  const kinds=mixedSymbols?[...new Set(candidates.map(q=>q.kind))]:[];
+  for(let i=0;i<count;i++){
+   // Alternate available categories (interval/chord or note/chord) in each window.
+   // Otherwise numerous interval pairs could drown out the fewer valid chords.
+   let options=kinds.length>1?candidates.filter(q=>q.kind===kinds[i%kinds.length]):candidates;
+   if(noteAppearances.size){
+    const least=q=>{const exposures=q.notes.filter(n=>noteAppearances.has(n)).map(n=>noteAppearances.get(n));return exposures.length?Math.min(...exposures):Infinity};
+    const minimum=Math.min(...options.map(least));
+    options=options.filter(q=>least(q)===minimum);
+   }
+   const alternatives=options.filter(q=>q.type+":"+signature(q)!==previousQuestion);
+   if(alternatives.length)options=alternatives;
+   const chosen=options[Math.floor(Math.random()*options.length)];
+   previousQuestion=chosen.type+":"+signature(chosen);
+   for(const n of chosen.notes)if(noteAppearances.has(n))noteAppearances.set(n,noteAppearances.get(n)+1);
+   out.push({...chosen});
+  }
+  return out;
+ };
+ byType.forEach(({type,windows},i)=>{
+  let remaining=Math.floor(total/types.length)+(i<total%types.length?1:0);
+  let windowIndex=0;
+  // Play by ear is presented and replayed in groups of three, without
+  // changing its allocation in the full exercise or the session total.
+  const groupSize=type==="play-ear"?3:pageSize;
+  while(remaining){
+   const window=windows[windowIndex%windows.length];
+   const amount=Math.min(groupSize,remaining),start=questions.length;
+   questions.push(...chooseQuestions(window.candidates,amount));
+   lessonPages.push({start,end:questions.length,base:window.base});
+   pageBases.push(window.base);
+   remaining-=amount;windowIndex++;
+  }
+ });
+ return true;
+}
+function startPractice(s){
+ syncSetup();held.clear();pageStaffs.clear();pageBases=[];lessonPages=[];
+ $("exerciseWarning").hidden=true;
+ stage=s;
+ if(s==="REVEAL"){
+  initReveal();
+ }else{
+  const types=chosenTypes(),bank=materials(),old=history.filter(x=>!x.ok);
+  let source=bank;
+  if(s==="INTRODUCTION"&&intro.size)source=bank.filter(q=>q.notes.some(n=>intro.has(n)));
+  if(s==="UTILIZATION"&&old.length)source=[...bank,...bank.filter(q=>old.some(r=>r.key===signature(q)))];
+  if(s==="WEAKNESSES")source=bank.filter(q=>old.some(r=>r.key===signature(q)));
+  const windowCount=mode==="midi"?1:practiceWindowStarts(practiceRoots()).length;
+  const guided=s==="INTRODUCTION"&&intro.size>0;
+  const count=mode==="midi"?(guided?72:48):guided?Math.max(72,windowCount*16):Math.max(48,windowCount*16);
+  if(!scheduleOrderedExercises(types,source,count))return;
+ }
+ if(!questions.length){const warning=$("exerciseWarning");warning.textContent="No matching material. Select the notes needed for an exercise or choose another exercise type.";warning.hidden=false;return}
+ qi=correct=0;results=[];lastOutcome=null;renderLastOutcome();
+ show("practice");showQuestion();
+}
+const naturals=[0,2,4,5,7,9,11],letters="CDEFGAB";
+const keyNames=["G♭","D♭","A♭","E♭","B♭","F","C","G","D","A","E","B","F♯"];
+const pageStaffs=new Map();
+function naturalPitch(pos){return (1+Math.floor(pos/7))*12+naturals[pos%7]}
+function makeStaffContext(windowNotes,pageNotes){
+ const lo=Math.min(...windowNotes),hi=Math.max(...windowNotes);
+ const anchors=(lo<60&&hi>=60)||(lo<=60&&hi>60)?[30,18]:
+  hi<=55?[18]:lo>=65?[30]:lo>=55&&hi<=65?[Math.random()<.5?18:30]:[hi<=60?18:30];
+ if($("lockCMajor").checked){
+  // In C major, selected chromatic pitches are accidentals, not members
+  // of the scale. Default to sharps consistently (C♯, D♯, F♯, G♯, A♯).
+  // Other unlocked key signatures may use flats where appropriate.
+  const spellPrefs=new Map([...new Set(pageNotes.filter(isBlack))].map(n=>[n,1]));
+  return {name:"C",count:0,alter:Array(7).fill(0),anchors,spellPrefs};
+ }
+ const keys=keyNames.map((name,i)=>{
+  const count=i-6,order=count<0?[6,2,5,1,4,0]:[3,0,4,1,5,2],alter=Array(7).fill(0);
+  order.slice(0,Math.abs(count)).forEach(l=>alter[l]=Math.sign(count));
+  const pcs=naturals.map((v,l)=>pc(v+alter[l]));
+  const cost=pageNotes.reduce((sum,n)=>sum+Number(!pcs.includes(pc(n))),0);
+  return {name,count,alter,cost};
+ });
+ const best=Math.min(...keys.map(k=>k.cost)),eligible=keys.filter(k=>k.cost===best);
+ // Favor simpler signatures while varying the key between compatible pages.
+ const weighted=eligible.flatMap(k=>Array(7-Math.abs(k.count)).fill(k));
+ return {...weighted[Math.floor(Math.random()*weighted.length)],anchors};
+}
+function pageStaff(){
+ const info=practicePageInfo(),page=info.number;
+ if(!pageStaffs.has(page)){
+  const notes=questions.slice(info.start,info.end).flatMap(q=>q.notes);
+  const base=info.base;
+  const range=mode==="midi"?practiceRoots():practiceRoots().filter(n=>n>=base&&n<base+24);
+  // Keep a stable key signature even as live Reveal questions extend the page.
+  const notationNotes=stage==="REVEAL"?range:notes;
+  pageStaffs.set(page,makeStaffContext(range.length?range:notes,notationNotes.length?notationNotes:notes));
+ }
+ return pageStaffs.get(page);
+}
+function spelling(n,ctx){
+ const octave=Math.floor(n/12)-1;let best=null;
+ for(let pos=Math.max(0,octave*7-1);pos<=octave*7+7;pos++){
+  const d=n-naturalPitch(pos);if(Math.abs(d)>1)continue;
+  const preferred=ctx.spellPrefs?.get(n);
+   const cost=(d===ctx.alter[pos%7]?0:5)+Math.abs(d)+(d&&Math.sign(d)!==Math.sign(ctx.count||1)?1:0)+(preferred&&d!==preferred?4:0);
+  if(!best||cost<best.cost)best={pos,d,cost};
+ }return best;
+}
+const accidental=d=>d<0?"♭":d>0?"♯":"♮";
+function writtenName(n,ctx){const {pos,d}=spelling(n,ctx);return letters[pos%7]+(d?accidental(d):"")+Math.floor(pos/7)}
+const staffY=pos=>64-(pos-30)*5;
+function staffLines(ctx,width){
+ return ctx.anchors.flatMap(a=>[0,2,4,6,8].map(k=>'<path stroke="#8494a5" d="M0 '+staffY(a+k)+'h'+width+'"/>')).join("");
+}
+const CLEF_OUTLINES={treble:'M314 801Q300 854 291 906Q282 958 282 1012Q282 1059 288.5 1100.5Q295 1142 307 1177Q320 1217 341 1252.5Q362 1288 385.5 1311Q409 1334 427 1334Q451 1334 493 1249Q514 1206 524 1156Q534 1106 534 1049Q534 978 515 907.5Q496 837 459.5 775Q423 713 372 666L407 498Q422 500 432 501Q442 502 447 502Q508 502 556 467.5Q604 433 632.5 377Q661 321 661 254Q661 177 621.5 115.5Q582 54 503 25Q508 8 532 -117Q538 -147 541 -164.5Q544 -182 545 -195Q546 -208 546 -225Q546 -275 521.5 -314.5Q497 -354 455.5 -376Q414 -398 363 -398Q311 -398 271 -378.5Q231 -359 208 -324.5Q185 -290 185 -245Q185 -197 211.5 -165Q238 -133 287 -133Q329 -133 355.5 -163.5Q382 -194 382 -236Q382 -272 357 -299Q332 -326 292 -326H282Q308 -365 364 -365Q433 -365 472 -320Q511 -275 511 -205Q511 -188 507 -159.5Q503 -131 493 -91Q483 -51 477.5 -25Q472 1 470 12Q436 2 390 2Q304 2 222 52Q142 102 96 184Q50 266 50 361Q50 451 91 530Q132 609 192.5 675Q253 741 314 801ZM341 826Q364 838 390 870.5Q416 903 440 945Q464 987 479 1029.5Q494 1072 494 1106Q494 1142 483 1163Q472 1184 445 1184Q421 1184 398.5 1162Q376 1140 358.5 1103.5Q341 1067 331 1022Q321 977 321 930Q321 898 327.5 872Q334 846 341 826ZM398 379Q371 373 347 353.5Q323 334 308.5 306.5Q294 279 294 248Q294 223 307 196.5Q320 170 339 154Q352 142 365 136Q380 129 380 123Q380 120 370 117Q332 126 301.5 151Q271 176 253.5 211.5Q236 247 236 287Q236 330 253.5 370Q271 410 302.5 442Q334 474 374 490L345 641Q229 547 174.5 456.5Q120 366 120 277Q120 212 154 156Q188 100 247 65.5Q306 31 380 31Q400 31 420.5 35Q441 39 464 45ZM495 55Q593 97 593 227Q593 270 571 305.5Q549 341 512 362Q475 383 429 383Z',bass:'M50 123Q216 231 288 301Q336 348 373 408.5Q410 469 431.5 536Q453 603 453 669Q453 728 435 773.5Q417 819 383 845Q349 871 302 871Q284 871 264.5 867Q245 863 224 855Q181 839 158 813.5Q135 788 135 765Q135 756 143 752Q151 748 158 748Q168 748 183 752Q190 754 196.5 755Q203 756 210 756Q248 756 272 733.5Q296 711 296 674Q296 638 266 612Q236 586 195 586Q146 586 111 617Q76 648 76 697Q76 756 109 802Q142 848 198.5 874Q255 900 324 900Q400 900 460 867Q520 834 555.5 776.5Q591 719 591 646Q591 551 538 464Q511 419 476.5 379Q442 339 389 297.5Q336 256 256 208Q176 160 57 101ZM687 809Q710 809 726 793Q742 777 742 754Q742 731 726 715.5Q710 700 687 700Q664 700 648 715.5Q632 731 632 754Q632 777 648 793Q664 809 687 809ZM687 589Q710 589 726 573Q742 557 742 534Q742 511 726 495.5Q710 480 687 480Q664 480 648 495.5Q632 511 632 534Q632 557 648 573Q664 589 687 589Z'};
+function vectorClef(bass,centerY,scaleFactor=1){
+ const kind=bass?"bass":"treble",s=(bass?.044:.038)*scaleFactor;
+ const metricCenter=bass?650:200;
+ return '<path d="'+CLEF_OUTLINES[kind]+'" transform="translate(0 '+(centerY+metricCenter*s)+') scale('+s+' '+(-s)+')" fill="currentColor"/>';
+}
+function staffSigns(ctx,vertical,low,high){
+ const order=ctx.count<0?[6,2,5,1,4,0]:[3,0,4,1,5,2];
+ let repeated="";
+ for(let pos=low;pos<=high;pos++){
+  const letter=(pos%7+7)%7,d=ctx.alter[letter];
+  if(d)repeated+='<text x="'+(33+order.indexOf(letter)*10)+'" y="'+(vertical(pos)+4)+'">'+accidental(d)+'</text>';
+ }
+ return '<g class="octave-signs">'+repeated+'</g>'+ctx.anchors.map(a=>{
+  const bass=a===18, offsets=ctx.count<0?[4,7,3,6,2,5]:[8,5,9,6,3,7];
+  // Musical clefs are embedded SVG outlines with uniform scaling, not stretchable Unicode glyphs.
+  const step=Math.abs(vertical(a+2)-vertical(a)),symbolScale=Math.min(2.4,Math.max(1,step/12));
+  let signs=vectorClef(bass,vertical(a+(bass?6:2)),symbolScale);
+  offsets.slice(0,Math.abs(ctx.count)).forEach((o,i)=>{signs+='<text class="standard-sign" x="'+(33+i*10)+'" y="'+(vertical(a+o-(bass?2:0))+4)+'">'+accidental(ctx.count)+'</text>'});
+  return signs;
+ }).join("");
+}
+function staffHeads(notes,cx,ctx){
+ let last=Infinity,shift=false,ink="";
+ for(const n of notes){
+  const {pos,d}=spelling(n,ctx),h=staffY(pos);shift=last-h<=5&&!shift;last=h;
+  const x=cx+(shift?9:0),a=ctx.anchors.length===1?ctx.anchors[0]:pos>=28?30:18;
+  for(let line=a-2;line>=pos;line-=2)ink+='<path stroke="currentColor" d="M'+(x-9)+' '+staffY(line)+'h18"/>';
+  for(let line=a+10;line<=pos;line+=2)ink+='<path stroke="currentColor" d="M'+(x-9)+' '+staffY(line)+'h18"/>';
+  ink+='<ellipse cx="'+x+'" cy="'+h+'" rx="5.8" ry="4"/>';
+  if(d!==ctx.alter[pos%7])ink+='<text x="'+(cx-17-(pos%2)*8)+'" y="'+(h+4)+'">'+accidental(d)+'</text>';
+ }return ink;
+}
+function staff(notes){
+ const ctx=pageStaff(),ys=notes.map(n=>staffY(spelling(n,ctx).pos));
+ const top=Math.min(staffY(ctx.anchors[0]+8)-16,...ys.map(y=>y-12)),bottom=Math.max(staffY(ctx.anchors.at(-1))+28,...ys.map(y=>y+12));
+ return '<svg class="staff" role="img" aria-label="'+ctx.name+' major staff" viewBox="0 '+top+' 185 '+(bottom-top)+'" fill="currentColor">'+staffLines(ctx,185)+staffSigns(ctx,staffY,Math.min(ctx.anchors.at(-1),...ys.map(y=>30+(64-y)/5)),Math.max(ctx.anchors[0]+8,...ys.map(y=>30+(64-y)/5)))+staffHeads(notes,135,ctx)+'</svg>';
+}
+function playbackEnd(){
+ const limit=practicePageInfo().end;
+ let end=qi+1;
+ while(end<limit&&questions[end].type===questions[qi].type)end++;
+ return end;
+}
+let earEnd=-1;
+function stopAudio(){
+ earEnd=-1;timers.splice(0).forEach(clearTimeout);cancelAnimationFrame(animation);
+ // Cancel queued lesson sounds without silencing the notes the student
+ // physically played, which must finish their normal attack and release.
+ if(playbackBus){playbackBus.disconnect();playbackBus=audio.createGain();playbackBus.connect(master)}
+}
+function playCurrent(single=false){
+ const end=stage==="REVEAL"?qi+1:playbackEnd(),whole=questions[qi].type==="play-ear";
+ stopAudio();if(whole)earEnd=end;
+ const q=questions[qi],seq=whole?questions.slice(qi,end).map(item=>item.notes):q.kind==="scale"?q.notes.slice(cursor).map(n=>[n]):questions.slice(qi,end).map(item=>item.notes), groups=whole?seq:seq.slice(0,single===true?1:+$("chunk").value);
+ if(!groups.length)return;
+ const beat=+$("beat").value,box=$("timeline");box.innerHTML=groups.map((_,i)=>'<span>'+ (!whole&&q.kind==="scale"?cursor+i+1:qi+i+1)+'</span>').join("")+'<i></i>';
+ ctx();const start=audio.currentTime;
+ groups.forEach((ns,i)=>ns.forEach(n=>tone(n,beat*.00062,i*beat/1000,start,true)));
+ const begin=performance.now(),line=box.lastChild;
+ function tick(){const t=Math.min(1,(performance.now()-begin)/(groups.length*beat));line.style.left='calc('+t*100+'% - 1px)';if(t<1)animation=requestAnimationFrame(tick)}tick();
+}
+function button(label,fn,html=false){let b=document.createElement("button");if(html)b.innerHTML=label;else b.textContent=label;b.onclick=fn;$("questionAnswers").append(b)}
+// Harmonic transcription asks for *absolute root pitch* as well as interval or
+// chord quality. Wrong options vary both the root and the harmony; identical
+// sounded pitch sets are never presented as competing answers.
+function notationChoices(q){
+ const options=[],seenNotes=new Set(),seenLabels=new Set();
+ const min=21,max=108;
+ const inPiano=notes=>notes.every(n=>Number.isInteger(n)&&n>=min&&n<=max);
+ const add=(notes,label)=>{
+  if(!inPiano(notes))return false;
+  const key=[...notes].sort((a,b)=>a-b).join(",");
+  if(seenNotes.has(key)||seenLabels.has(label))return false;
+  seenNotes.add(key);seenLabels.add(label);options.push({notes,label});
+  return true;
+ };
+ const take=(candidates)=>{
+  for(const candidate of candidates)if(add(candidate.notes,candidate.label))return true;
+  return false;
+ };
+ if(q.kind==="interval"){
+  const root=q.notes[0],size=q.notes[1]-root;
+  const intervalAnswer=(r,d)=>({notes:[r,r+d],label:noteName(r)+" + "+intervals[d]});
+  add(q.notes,intervalAnswer(root,size).label);
+  // Build contextually useful decoys: same interval on a different pitch,
+  // the same starting note with a different interval, then a mixed variant.
+  const actual=shuffle(materials().filter(x=>x.kind==="interval" &&
+   (mode==="midi"||inWindow(x,currentPageBase()))).map(x=>intervalAnswer(x.notes[0],x.notes[1]-x.notes[0])));
+  const rootOffsets=shuffle([-2,-1,1,2,-3,3,-12,12,-4,4,-5,5]);
+  const degrees=shuffle([...Array.from({length:12},(_,i)=>i+1)].filter(d=>d!==size));
+  take([...actual.filter(x=>x.notes[1]-x.notes[0]===size&&x.notes[0]!==root),
+   ...rootOffsets.map(offset=>intervalAnswer(root+offset,size))]);
+  take([...actual.filter(x=>x.notes[0]===root&&x.notes[1]-x.notes[0]!==size),
+   ...degrees.map(d=>intervalAnswer(root,d))]);
+  const variations=[...actual];
+  for(const offset of rootOffsets)for(const d of degrees)variations.push(intervalAnswer(root+offset,d));
+  for(const candidate of variations){if(options.length>=4)break;add(candidate.notes,candidate.label)}
+ }else{
+  const chordAnswer=(root,suffix,steps)=>({root,suffix,
+   notes:steps.map(d=>root+d),label:N[pc(root)]+suffix+" · root "+noteName(root)});
+  const quality=chordDefs.find(([suffix])=>suffix===q.suffix);
+  add(q.notes,chordAnswer(q.root,q.suffix,quality?.[2]??q.ints).label);
+  const actual=shuffle(materials().filter(x=>x.kind==="chord"&&
+   (mode==="midi"||inWindow(x,currentPageBase()))).map(x=>chordAnswer(x.root,x.suffix,x.ints)));
+  const offsets=shuffle([-2,-1,1,2,-3,3,-12,12,-4,4,-5,5]);
+  const qualities=shuffle(chordDefs.filter(([suffix])=>suffix!==q.suffix));
+  take([...actual.filter(x=>x.suffix===q.suffix&&x.root!==q.root),
+   ...offsets.map(offset=>chordAnswer(q.root+offset,q.suffix,quality[2]))]);
+  take([...actual.filter(x=>x.root===q.root&&x.suffix!==q.suffix),
+   ...qualities.map(([suffix,,steps])=>chordAnswer(q.root,suffix,steps))]);
+  for(const candidate of actual){if(options.length>=4)break;add(candidate.notes,candidate.label)}
+  if(options.length<4){
+   for(const offset of [0,...offsets])for(const [suffix,,steps] of chordDefs){
+    if(options.length>=4)break;
+    const candidate=chordAnswer(q.root+offset,suffix,steps);
+    add(candidate.notes,candidate.label);
+   }
+  }
+ }
+ return shuffle(options.slice(0,4));
+}
+// Note transcription tests actual pitches, not harmonic labels. Chord answers
+// always have the same number of pitches as the sounding chord, so the number
+// of notes in a choice never gives the correct answer away.
+function noteChoices(q){
+ const target=[...q.notes].sort((a,b)=>a-b),count=target.length;
+ const token=ns=>ns.join(","),seen=new Set([token(target)]),alternatives=[];
+ const base=currentPageBase();
+ const inRange=n=>n>=21&&n<=108&&(mode==="midi"||(n>=base&&n<base+24));
+ const add=notes=>{
+  const ns=[...new Set(notes)].sort((a,b)=>a-b);
+  if(ns.length!==count||!ns.every(inRange)||seen.has(token(ns)))return;
+  seen.add(token(ns));alternatives.push(ns);
+ };
+ // Prefer other actual note/chord material with the same voicing size.
+ for(const material of shuffle(materials().filter(item=>
+  ["note","chord"].includes(item.kind)&&item.notes.length===count)))add(material.notes);
+ // With a very small note pool there may be only one possible chord.
+ // Add nearby single-pitch variations to keep four distinct choices available.
+ for(const pitch of shuffle(target))for(const offset of shuffle([-1,1,-2,2,-3,3,-4,4]))
+  add(target.map(n=>n===pitch?n+offset:n));
+ // Extreme-register and tightly spaced cases can reject nearby changes.
+ if(alternatives.length<3){
+  const range=mode==="midi"?[21,108]:[base,Math.min(108,base+23)];
+  for(let n=range[0];n<=range[1]&&alternatives.length<3;n++)
+   for(let i=0;i<count&&alternatives.length<3;i++)add(target.map((m,j)=>i===j?n:m));
+ }
+ return shuffle([target,...alternatives.slice(0,3)].map(notes=>({
+  label:notes.map(noteName).join(" · "),notes
+ })));
+}
+function showQuestion(){
+ following=[];
+ const continuing=qi<earEnd;if(!continuing)stopAudio();const q=questions[qi],review=stage==="REVEAL";done=false;cursor=0;fresh=false;peak=[];if(mode==="touch")held.clear();
+ if(mode!=="midi"&&renderedPianoBase!==currentPageBase()){
+  // The two-octave keyboard follows the lesson page; there is no manual octave selector.
+  held.clear();selected=new Set();renderPiano();
+ }
+ selected=new Set(held.values());paintPiano();drawLine();renderLastOutcome();
+ $("inputNoteNames").textContent="No notes entered";$("questionAnswers").replaceChildren();if(!continuing)$("timeline").replaceChildren();
+ $("qCount").textContent=review?"Encounter "+(qi+1)+" / "+(questions.length+revealReviewRounds*revealState.pendingReviews.length)+" · "+(q.revealPhase.includes("reinforce")?"reinforcement":"introducing"):(qi+1)+" / "+questions.length;$("exerciseLabel").textContent=review?(q.revealPhase.includes("reinforce")?"Reveal · Reinforcement":"Reveal · First encounter"):titles[q.type];
+ $("inputModeLabel").textContent=mode.toUpperCase();$("nextQuestion").disabled=!review;$("feedback").className="status";$("feedback").textContent=review?"Review and continue.":"Hold the target notes together, or choose an answer below.";
+ $("guide").hidden=q.type!=="to-notation";$("guide").open=false;
+ $("guideText").textContent="Intervals: "+intervals.slice(1).map((name,i)=>name+" ("+(i+1)+" semitones)").join(" · ")+" | Chords: "+chordDefs.map(([suffix,name,ints])=>(suffix||"Major")+" · "+name+" · "+ints.join("–")).join(" | ");
+ $("revealAnswer").hidden=true;$("nextQuestion").hidden=!review;$("clearPiano").hidden=true;
+ $("questionHelp").textContent=review?(q.kind!=="note"?
+  (q.revealPhase==="material-meet"?"New "+q.kind:q.kind+" reinforcement")+" · Play "+q.notes.map(noteName).join(q.kind==="scale"?" → ":" + "):
+  ({meet:"New note",review:"Review this note",reinforce:"Note reinforcement"}[q.revealPhase]||"Practice")+" · Listen and play " + q.notes.map(noteName).join(" · ")):
+  q.type==="play-sheet"||["to-sheet","to-notation","to-note","play-ear"].includes(q.type)?"":stage==="INTRODUCTION"?q.notes.map(noteName).join(" · "):"";
+ if(review&&q.exposure)$("questionHelp").textContent+=" · "+q.exposure+" of 3";
+ const prompt=$("questionPrompt");prompt.textContent=review||["play-notation","scales"].includes(q.type)?q.symbol:q.type==="to-sheet"?"Place what you hear on the staff":q.type==="to-notation"?(q.kind==="interval"?"Which starting note and interval did you hear?":"Which chord and root pitch did you hear?"):q.type==="to-note"?(q.kind==="chord"?"Which notes did you hear together?":"Which note did you hear?"):"Play what you hear";
+ prompt.hidden=q.type==="play-sheet";
+ if(q.type==="play-notation"&&!review)$("questionHelp").textContent=q.kind==="interval"?
+  "Play both notes together, starting on "+noteName(q.notes[0])+". The interval is "+intervals[q.notes[1]-q.notes[0]]+".":
+  "Play this chord with its root at "+noteName(q.root)+".";
+ if(review&&q.kind==="scale")prompt.innerHTML=q.symbol+staff(q.notes);
+ if(review){$("feedback").textContent="Listen, then play the displayed "+q.kind+" (or tap Next)."}
+ else if(q.type==="to-sheet")staffInput();
+ else if(q.type==="to-notation"){
+  for(const choice of notationChoices(q))button(choice.label,()=>submit(choice.notes));
+ }
+ else if(q.type==="to-note"){
+  for(const choice of noteChoices(q))button(choice.label,()=>submit(choice.notes));
+ }
+ $("tapControls").hidden=mode!=="touch"||(review&&q.kind==="note");$("submitTap").disabled=true;$("resetTap").disabled=true;
+ if(mode==="touch")$("feedback").textContent=review&&q.kind==="note"?"Tap the displayed note to continue automatically, or press Next.":"Tap keys to select or release them, then submit.";
+ const writing=q.type==="to-sheet"&&!review;
+ $("piano").closest(".panel").hidden=writing;
+ if(writing)$("feedback").textContent="Tap a pitch, adjust its accidental, then Submit. Middle C gets a short ledger line when used.";
+ const pagePlayback=continuing||q.type==="play-ear";
+ $("playQuestion").textContent=review?(q.kind==="chord"?"▶ Replay chord":"▶ Replay note"):(q.type==="play-ear"?"▶ Replay ear group":pagePlayback?"▶ Play remaining exercise":"▶ Play chunk");
+ $("chunk").parentElement.hidden=review||pagePlayback;
+ if(!continuing&&(review||["to-sheet","to-note","to-notation","play-ear"].includes(q.type)))playCurrent(true);started=performance.now();
+}
+function staffInput(){
+ const host=$("questionAnswers"),area=document.createElement("div");
+ area.className="staff-editor";host.append(area);
+ const toolbar=document.createElement("div"),menu=document.createElement("div");
+ toolbar.className="row";menu.className="row accidental-menu";menu.hidden=true;
+ menu.setAttribute("role","group");menu.setAttribute("aria-label","Accidental for selected note");
+ const check=document.createElement("button");check.textContent="Submit staff";check.className="primary";check.disabled=true;
+ const chosen=new Map(),natural=[0,2,4,5,7,9,11],notes=currentWindowNotes();
+ const index=n=>(Math.floor(n/12)-1)*7+[0,0,1,1,2,3,3,4,4,5,5,6][pc(n)];
+ const bottom=Math.max(0,index(notes[0])-1),top=index(notes.at(-1))+1;
+ const ctx=pageStaff(),anchors=ctx.anchors,high=Math.max(top,anchors[0]+8),low=Math.min(bottom,anchors.at(-1));
+ const paper=document.createElement("div");paper.className="staff-paper";
+ const compactStaff=window.matchMedia("(orientation: landscape) and (max-height: 620px)").matches;
+ const step=compactStaff?Math.max(10,Math.min(14,Math.floor((window.innerHeight-148)/(high-low+1)))):22;
+ paper.style.setProperty("--staff-step",step+"px");
+ const keyLabel=document.createElement("strong");keyLabel.textContent=ctx.name+" major";toolbar.prepend(keyLabel);
+ const signs=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  signs.setAttribute("class","entry-signs");signs.setAttribute("viewBox","0 0 220 "+((high-low+1)*step));
+  signs.setAttribute("width","220");signs.setAttribute("height",String((high-low+1)*step));
+  signs.setAttribute("preserveAspectRatio","xMinYMin meet");
+  signs.innerHTML=staffSigns(ctx,pos=>(high-pos)*step+step/2,low,high);paper.append(signs);
+  const rows=new Map();
+  function updateLedgerLines(){
+   const needed=new Set();
+   for(const key of chosen.keys()){
+    const p=Number(key.split(",")[0]),a=anchors.length===1?anchors[0]:p>=28?30:18;
+    if(p<a)for(let line=a-2;line>=p;line-=2)needed.add(line);
+    if(p>a+8)for(let line=a+10;line<=p;line+=2)needed.add(line);
+   }
+   for(const [p,slot] of rows)if(slot.classList.contains("staff-ledger"))slot.classList.toggle("show-ledger",needed.has(p));
+  }
+ for(let pos=high;pos>=low;pos--){
+  const n=(Math.floor(pos/7)+1)*12+natural[pos%7],row=document.createElement("button");
+  row.type="button";row.className="staff-slot";
+  if(pos%2===0)row.classList.add(anchors.some(a=>pos>=a&&pos<=a+8)?"staff-rule":"staff-ledger");
+  row.setAttribute("aria-label","Place "+noteName(n));row.setAttribute("aria-pressed","false");
+  row.onclick=()=>{
+   menu.replaceChildren();menu.hidden=false;row.after(menu);
+   const keyFor=d=>pos+","+d;
+   const variants=[[1,"♯ Sharp"],[0,"♮ Natural"],[-1,"♭ Flat"]];
+   const hasNotes=()=>variants.some(([d])=>chosen.has(keyFor(d)));
+   // The first explicit accidental replaces the initial natural on a new position.
+   const implied=ctx.alter[pos%7];
+   let provisional=!hasNotes()&&n+implied>=21&&n+implied<=108;
+   if(provisional)chosen.set(keyFor(implied),n+implied);
+   function repaint(){
+    row.replaceChildren();
+    const active=variants.filter(([d])=>chosen.has(keyFor(d)));
+    if(active.length){
+     const marks=document.createElement("span");marks.className="placed-notes";
+     for(const [d] of active){
+      const mark=document.createElement("span");mark.className="note-mark";
+      if(d!==implied){const sign=document.createElement("span");sign.className="mark-accidental";sign.textContent=accidental(d);mark.append(sign)}
+      const head=document.createElement("span");head.className="mark-head";mark.append(head);marks.append(mark);
+     }
+     row.append(marks);
+    }
+    row.setAttribute("aria-pressed",String(hasNotes()));check.disabled=!chosen.size;
+    updateLedgerLines();
+    for(const btn of menu.querySelectorAll("[data-delta]"))btn.setAttribute("aria-pressed",String(chosen.has(keyFor(Number(btn.dataset.delta)))));
+   }
+   for(const [d,label] of variants){
+    const btn=document.createElement("button");btn.textContent=label;btn.dataset.delta=d;btn.disabled=n+d<21||n+d>108;
+    btn.onclick=()=>{
+     if(provisional){chosen.delete(keyFor(implied));provisional=false}
+     if(chosen.has(keyFor(d)))chosen.delete(keyFor(d));else chosen.set(keyFor(d),n+d);
+     repaint();
+    };menu.append(btn);
+   }
+   const close=document.createElement("button");close.textContent="Done";close.onclick=()=>{menu.hidden=true;row.focus()};menu.append(close);
+   repaint();
+  };paper.append(row);rows.set(pos,row);
+ }
+ check.onclick=()=>submit([...new Set(chosen.values())].sort((a,b)=>a-b));
+ toolbar.append(check);area.append(toolbar,paper);
+}
+function sheetHint(notes){
+ if(stage!=="INTRODUCTION"&&stage!=="REVEAL")return "";
+ return notes.filter(n=>intro.has(n)).map(n=>writtenName(n,pageStaff())).join(" · ");
+}
+function onPracticeStaff(q){
+ return q.type==="play-sheet" || (stage==="REVEAL" && (q.kind==="chord" || q.kind==="interval"));
+}
+function scorePage(first,end){
+ const box=$("practiceLine"),items=questions.slice(first,end);
+ const visible=(q,index)=>onPracticeStaff(q)&&(stage!=="REVEAL"||first+index<=qi);
+ const pitches=items.filter(visible).flatMap(q=>q.notes);
+ const ctx=pageStaff(),ys=pitches.map(n=>staffY(spelling(n,ctx).pos));
+ const top=Math.min(staffY(ctx.anchors[0]+8)-16,...ys.map(y=>y-12)),bottom=Math.max(staffY(ctx.anchors.at(-1))+28,...ys.map(y=>y+12));
+ const headerWidth=40+Math.abs(ctx.count)*10;
+ let x=0,ink="",currentX=0;
+ items.forEach((q,j)=>{
+  const active=first+j===qi, readable=visible(q,j);
+  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):sheetHint(q.notes)):readable?q.symbol:["play-notation","scales"].includes(q.type)?q.symbol:"♪ "+(first+j+1);
+  const width=Math.max(78,label.length*7+18),cx=x+width/2;
+  if(active){currentX=cx;ink+='<rect x="'+x+'" y="'+top+'" width="'+width+'" height="'+(bottom-top+24)+'" rx="5" fill="#61baff" opacity=".16"/>'}
+  ink+='<g fill="'+(active?'#ffffff':first+j<qi?(q.passed===false?'#ffa49b':'#88cfa1'):'#bfcbda')+'">';
+  if(readable)ink+=staffHeads(q.notes,cx,ctx);
+  for(const a of ctx.anchors)ink+='<path stroke="#68788b" d="M'+(x+width-1)+' '+staffY(a+8)+'v40"/>';
+  ink+='<text text-anchor="middle" x="'+cx+'" y="'+(bottom+15)+'" font-size="12">'+label+'</text></g>';x+=width;
+ });
+ const height=bottom-top+24;
+ const svg=(width,content)=>'<svg width="'+width+'" height="'+height+'" viewBox="0 '+top+' '+width+' '+height+'" fill="currentColor">'+content+'</svg>';
+ box.innerHTML='<div class="score-strip"><div class="signature" aria-label="'+ctx.name+' major">'+svg(headerWidth,staffLines(ctx,headerWidth)+staffSigns(ctx,staffY,Math.min(ctx.anchors.at(-1),...ys.map(y=>30+(64-y)/5)),Math.max(ctx.anchors[0]+8,...ys.map(y=>30+(64-y)/5)))+'<text x="2" y="'+(bottom+15)+'" font-size="11">'+ctx.name+' major</text>')+'</div>'+svg(x,staffLines(ctx,x)+ink)+'</div>';
+ box.scrollLeft=Math.max(0,currentX-box.clientWidth*.32);
+}
+function drawLine(){
+ const page=practicePageInfo(),first=page.start,box=$("practiceLine");box.replaceChildren();
+ box.classList.toggle("score",onPracticeStaff(questions[qi]));
+ if(onPracticeStaff(questions[qi]))scorePage(first,page.end);
+ else for(let i=first;i<page.end;i++){
+  const q=questions[i],cell=document.createElement("span");
+  cell.textContent=stage==="REVEAL"?(i<=qi?q.symbol:"?"):["play-notation","scales"].includes(q.type)?q.symbol:q.type==="play-sheet"?"♫ "+(i+1):"♪ "+(i+1);
+  if(q.type==="play-sheet"&&stage!=="REVEAL")cell.textContent=sheetHint(q.notes)||"♫ "+(i+1);
+  if(i===qi){cell.className="current";cell.setAttribute("aria-current","step")}else if(i<qi)cell.className=q.passed===false?"miss":"passed";
+  box.append(cell)
+ }
+ const activeCell=box.querySelector(".current");
+ if(activeCell&&box.scrollWidth>box.clientWidth)box.scrollLeft+=activeCell.getBoundingClientRect().left-box.getBoundingClientRect().left-box.clientWidth*.3;
+ $("stageLabel").textContent=stage+" · Page "+(page.number+1)+(stage==="REVEAL"?" · live lesson":" / "+lessonPages.length)+(mode==="midi"?"":" · "+noteName(currentPageBase())+"–"+noteName(currentPageBase()+23))
+}
+let lastOutcome=null;
+function renderLastOutcome(){
+ const el=$("previousResult");
+ el.hidden=!lastOutcome;
+ if(!lastOutcome){el.textContent="";el.className="previous-result";return}
+ const {number,type,status}=lastOutcome;
+ el.className="previous-result "+(status===true?"good":status===false?"bad":"skipped");
+ const symbol=status===true?"✓ Correct":status===false?"✗ Incorrect":"— Skipped (not scored)";
+ el.textContent="Previous question #"+number+" · "+symbol+" · "+type;
+}
+function markLastOutcome(q,status,index=qi){
+ lastOutcome={number:index+1,type:stage==="REVEAL"?"Reveal":titles[q.type]||q.type,status};
+ renderLastOutcome();
+}
+function record(q,ok,ms){q.passed=ok;let entry={key:signature(q),label:q.symbol,ok,ms};results.push(entry);history.push(entry);if(ok)correct++;markLastOutcome(q,ok,questions.indexOf(q))}
+let following=[];
+function submit(ns){
+ if(done)return;
+ const q=questions[qi],value=ns.join(","),matches=signature(q)===value;
+ if(stage==="REVEAL"){if(matches)advance("Correct");return}
+ const piano=["play-ear","play-sheet","play-notation"].includes(q.type);
+ if(piano){
+  const next=questions.slice(qi+1,qi+4);
+  const canFollow=next.length===3&&practicePageInfo(qi).number===practicePageInfo(qi+3).number&&next.every(item=>item.type===q.type);
+  if(canFollow&&!matches&&signature(next[following.length])===value){
+   following.push(performance.now());
+   if(following.length===3){
+    record(q,false,null);
+    let previous=started;
+    for(const at of following){record(questions[++qi],true,at-previous);previous=at}
+    advance("Phrase matched");
+   }else{
+    $("feedback").textContent="Continue the phrase or retry the highlighted target.";
+    if(mode==="touch")$("resetTap").click();
+   }
+   return;
+  }
+  following=[];
+  if(!matches){$("feedback").textContent="Try the highlighted target again.";if(mode==="touch")$("resetTap").click();return}
+ }
+ if(earEnd<0)stopAudio();
+ record(q,matches,performance.now()-started);done=true;advance(matches?"Correct":"Answer recorded");
+}
+function advance(message,keepScoredOutcome=false){
+ if(stage==="REVEAL"&&!keepScoredOutcome)markLastOutcome(questions[qi],message==="Correct"?true:null);
+ if(stage==="REVEAL"){
+  completeReveal(questions[qi]);
+  // Do not finish after the introductions: append all earned reviews before
+  // leaving the very last first-encounter question.
+  if(qi+1>=questions.length)beginRevealReinforcement();
+ }
+ if(++qi>=questions.length){finish();return}
+ showQuestion();
+ if(message&&mode==="touch"&&questions[qi].type==="play-ear"){
+  $("feedback").textContent=message+" · Now answering "+(qi+1)+" of "+questions.length+".";
+ }
+}
+function skipQuestionWrong(){
+ if(!activePractice()||done)return;
+ stopAudio();
+ held.clear();selected.clear();fresh=false;peak=[];following=[];
+ record(questions[qi],false,null);
+ done=true;
+ advance(null,true);
+}
+function activePractice(){return !$("practiceOptions").open&&$("s-practice").classList.contains("active")&&qi<questions.length}
+function updateHeld(){
+ selected=new Set(held.values());paintPiano();
+ $("inputNoteNames").textContent=[...selected].sort((a,b)=>a-b).map(noteName).join(" · ")||"Ready";
+ return [...selected].sort((a,b)=>a-b)
+}
+function matchHeld(ns){
+ if(!fresh||!activePractice())return;
+ const q=questions[qi];
+ if(q.kind==="scale"){
+  if(ns.length!==1)return;
+  if(ns[0]===q.notes[cursor]){cursor++;fresh=false;
+   if(cursor===q.notes.length)submit(q.notes);else $("feedback").textContent=cursor+" / "+q.notes.length+" played";
+  }else $("feedback").textContent="Try the next note of the scale again.";
+ }else if(ns.join(",")===signature(q))submit(ns);
+}
+function enter(n,source="api:"+n){
+ if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&questions[qi].type==="to-sheet"))return;
+ held.set(source,n);fresh=true;const ns=updateHeld();
+ // Sound the key *before* checking the answer: a correct Reveal answer
+ // immediately advances and auto-plays the next note. Playing this key
+ // afterwards would layer the previous note over that next prompt.
+ tone(n,.35);
+ if(ns.length>=peak.length)peak=ns;
+ matchHeld(ns);
+}
+function release(source){
+ if(!held.delete(source))return;
+ const ns=updateHeld();if(!activePractice())return;
+ if(ns.length){matchHeld(ns);return}
+ if(fresh&&peak.length){
+  if(stage!=="REVEAL"&&["play-sheet","play-ear","play-notation"].includes(questions[qi].type))submit(peak);
+  else{$("feedback").textContent="Try that target again."}
+ }
+ fresh=false;peak=[]
+}
+window.addEventListener("keyup",e=>release(e.code));
+window.addEventListener("blur",()=>{if(mode==="touch")return;held.clear();fresh=false;peak=[];updateHeld()});
+function paintPiano(){for(const b of $("piano").children)b.classList.toggle("active",selected.has(+b.dataset.midi))}
+function toggleTap(n){
+ if(!activePractice())return;
+ // A Reveal note is a one-key task. Tapping the correct piano key must
+ // advance immediately; requiring a separate Submit made it feel stalled.
+ const current=questions[qi];
+ if(stage==="REVEAL"&&current.kind==="note"&&mode==="touch"){
+  tone(n,.35);
+  if(n===current.notes[0])submit([n]);
+  else $("feedback").textContent="Not that note — try "+current.symbol+" again.";
+  return;
+ }
+ const key="tap:"+n;if(held.has(key))held.delete(key);else{held.set(key,n);tone(n,.35)}
+ updateHeld();$("inputNoteNames").textContent=[...held.values()].map(noteName).join(" · ")||"Ready";
+ $("submitTap").disabled=$("resetTap").disabled=!held.size;
+}
+$("resetTap").onclick=()=>{held.clear();updateHeld();$("submitTap").disabled=$("resetTap").disabled=true};
+$("submitTap").onclick=()=>{
+ if(!activePractice()||mode!=="touch"||!held.size)return;
+ const ns=[...held.values()];if(questions[qi].kind!=="scale")ns.sort((a,b)=>a-b);
+ if(stage==="REVEAL"&&ns.join(",")!==signature(questions[qi]))$("feedback").textContent="Adjust your selection and submit again.";
+ submit(ns)
+};
+function renderPiano(){const base=currentPageBase();
+ renderedPianoBase=mode==="midi"?null:base;
+ const range=$("windowRange");range.hidden=mode==="midi";
+ range.textContent=mode==="midi"?"":noteName(base)+"–"+noteName(base+23);
+ buildKeys($("piano"),mode==="midi"?21:base,mode==="midi"?108:base+23,()=>{},selected,mode==="keyboard");
+ const keyboard=$("piano");
+ if(mode!=="midi"){
+  const width=parseFloat(keyboard.style.width);keyboard.style.width="100%";
+  for(const key of keyboard.children){
+   key.style.left=(parseFloat(key.style.left)*100/width)+"%";
+   key.style.width=((key.classList.contains("black")?BLACK_WIDTH:WHITE_WIDTH)*100/width)+"%";
+  }
+ }
+ for(const b of keyboard.children){
+  if(mode==="touch"){b.onclick=()=>toggleTap(+b.dataset.midi);continue}
+  b.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();b.setPointerCapture(e.pointerId);enter(+b.dataset.midi,"pointer:"+e.pointerId)};
+  b.onpointerup=e=>release("pointer:"+e.pointerId);b.onlostpointercapture=b.onpointerup;
+ }
+ $("keyLegend").textContent=mode==="keyboard"?"Q–U lower · Z–M upper · Lower black keys: 2 3 5 6 7 · Upper black keys: S D G H J · A = C♭ above-left of Z · Each black key is the sharp of its left neighbor and the flat of its right neighbor.":"Tap keys to enter notes.";paintPiano()}
+window.addEventListener("keydown",e=>{
+ if(e.code==="F1"&&activePractice()){
+  e.preventDefault();
+  if(!e.repeat&&!e.shiftKey&&!e.altKey&&!e.ctrlKey&&!e.metaKey)skipQuestionWrong();
+  return;
+ }
+ if($("practiceOptions").open||mode!=="keyboard"||!$("s-practice").classList.contains("active")||e.repeat||e.shiftKey||e.altKey||e.ctrlKey||e.metaKey||e.target.tagName==="SELECT")return;
+ const physicalKey=e.code.replace(/^(Key|Digit)/,"").toLowerCase();
+ const base=currentPageBase();
+ if(physicalKey==="a"){e.preventDefault();enter(base+11,e.code);return}
+ for(let n=base;n<base+24;n++)if(keycapFor(n,base)===physicalKey){
+ e.preventDefault();enter(n,e.code);break}});
+function finish(){held.clear();fresh=false;stopAudio();if(qi>=questions.length)completed.add(stage);
+ for(const s of completed){let b=$(stages[s]);if(!b.textContent.startsWith("✓"))b.prepend("✓ ")}
+ const times=results.filter(r=>r.ms!==null);$("finalAccuracy").textContent=results.length?Math.round(correct/results.length*100)+"%":"—";
+ const areas=new Map();for(const r of results){const a=areas.get(r.label)||[0,0];a[0]+=Number(r.ok);a[1]++;areas.set(r.label,a)}
+ const labels=strong=>[...areas].filter(([,a])=>(a[0]===a[1])===strong).map(([k])=>k).join(", ")||"—";
+ $("finalStats").textContent=results.length?correct+" of "+results.length+" correct · Average response "+(times.reduce((t,r)=>t+r.ms,0)/Math.max(1,times.length)/1000).toFixed(1)+" s. Strong areas: "+labels(true)+". Review: "+labels(false)+".":stage==="REVEAL"?"Material reviewed.":"No answers recorded.";
+ const finalResult=$("finalLastResult");finalResult.hidden=!lastOutcome;
+ if(lastOutcome){finalResult.className=$("previousResult").className;finalResult.textContent=$("previousResult").textContent}
+ renderSelectedTypes();$("repeatWeak").disabled=$("weakBtn").disabled;show("finished")}
+for(const [s,id] of Object.entries(stages))$(id).onclick=()=>startPractice(s);
+$("playQuestion").onclick=playCurrent;$("revealAnswer").onclick=()=>{$("feedback").textContent=questions[qi].symbol+" · "+questions[qi].notes.map(noteName).join(" ")};
+$("nextQuestion").onclick=()=>advance();
+$("clearPiano").onclick=()=>{selected.clear();cursor=0;questions[qi].scaleMiss=false;paintPiano();$("inputNoteNames").textContent="No notes entered"};
+$("endPractice").onclick=finish;$("backExercises").onclick=()=>{stopAudio();renderSelectedTypes();show("exercises")};
+$("introduceMore").onclick=()=>{intro.clear();renderNoteChecks("introNotes",intro);show("intro")};$("changeModes").onclick=()=>show("mode");$("repeatWeak").onclick=()=>startPractice("WEAKNESSES");$("returnExercises").onclick=()=>show("exercises");
+$("skipIntro").onclick=()=>{intro.clear();renderNoteChecks("introNotes",intro);show("pool")};
+$("allNotes").textContent="Select all 88 keys";$("allNotes").hidden=false;
+function mirrorPracticeOptions(){
+ $("practiceLockCMajor").checked=$("lockCMajor").checked;
+ $("repeatStaffSigns").closest("label").hidden=$("practiceLockCMajor").checked;
+ $("applyBeginnerSettings").disabled=true;
+}
+$("practiceLockCMajor").onchange=()=>{
+ $("repeatStaffSigns").closest("label").hidden=$("practiceLockCMajor").checked;
+ $("applyBeginnerSettings").disabled=$("practiceLockCMajor").checked===$("lockCMajor").checked;
+};
+$("applyBeginnerSettings").onclick=()=>{
+ $("lockCMajor").checked=$("practiceLockCMajor").checked;
+ $("practiceOptions").close();startPractice(stage);
+};
+$("openOptions").onclick=()=>{mirrorPracticeOptions();$("practiceOptions").showModal()};
+$("practiceOptions").addEventListener("click",e=>{if(e.target===$("practiceOptions")){
+ const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();
+}});
+
+
+window.trainerWidgets=Object.freeze({
+ sheet:{render:staff},
+ piano:{release:n=>release("api:"+n),render:renderPiano,highlight(notes){selected=new Set(notes);paintPiano()},enter},
+ notation:{answerKey:()=>chordDefs.map(([symbol,name,steps])=>({symbol,name,steps:[...steps]}))},
+ audio:{play:playCurrent,stop:stopAudio,setChunk(length){if([1,2,4,8].includes(length))$("chunk").value=String(length)}},
+ quiz:{submit,proceed(){if(!$("nextQuestion").disabled)$("nextQuestion").click()},nextPage(){this.proceed()},showInputOptions(visible){$("questionAnswers").hidden=!visible},feedback(message){$("feedback").textContent=message}}
+});
+show("mode");
+
+})();
+</script>
+</body></html>
