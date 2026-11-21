@@ -405,7 +405,9 @@ const signature=q=>q.notes.join(",");
 const pageSize=16, held=new Map();
 let pageBases=[],lessonPages=[],revealState=null;
 const inWindow=(q,base)=>q.notes.every(n=>n>=base&&n<base+24);
-function practiceWindowStarts(notes){
+// The minimum number of non-overlapping windows determines lesson length.
+// Keep it independent from the additional overlapping windows used for variety.
+function coverageWindowStarts(notes){
  const remain=[...new Set(notes)].sort((a,b)=>a-b),bases=[];
  while(remain.length){
   const first=remain[0],base=Math.min(96,Math.max(12,Math.floor(first/12)*12));
@@ -413,6 +415,50 @@ function practiceWindowStarts(notes){
   while(remain.length&&remain[0]<base+24)remain.shift();
  }
  return bases;
+}
+function practiceWindowStarts(notes){
+ const ordered=[...new Set(notes)].sort((a,b)=>a-b);
+ if(!ordered.length)return [];
+ // A range fitting in two octaves needs only one fixed window.
+ if(ordered.at(-1)-ordered[0]<24)return coverageWindowStarts(ordered);
+ // For wider ranges, use *overlapping* octave-aligned two-octave windows.
+ // The first covers the lowest pitch; the last reaches the highest pitch
+ // without reserving an almost-empty window for the final high note.
+ const low=Math.min(96,Math.max(12,Math.floor(ordered[0]/12)*12));
+ const high=Math.min(96,Math.max(low,Math.floor((ordered.at(-1)-12)/12)*12));
+ const bases=[];
+ for(let base=low;base<=high;base+=12)
+  if(ordered.some(n=>n>=base&&n<base+24))bases.push(base);
+ return bases;
+}
+// Plan each exercise's windows in a random order, not low-to-high.
+// Every multi-page section visits its available low and high extremes;
+// middle windows are sampled across the range rather than always from below.
+function randomizedWindowVisits(windows,pages,usage){
+ if(!windows.length||!pages)return [];
+ const sorted=[...windows].sort((a,b)=>a.base-b.base),visits=[];
+ const k=Math.min(pages,sorted.length);
+ if(k===1){
+  const minUsage=Math.min(...sorted.map(w=>usage.get(w.base)||0));
+  const eligible=sorted.filter(w=>(usage.get(w.base)||0)===minUsage);
+  visits.push(eligible[Math.floor(Math.random()*eligible.length)]);
+ }else{
+  const selection=[sorted[0],sorted.at(-1)];
+  const middle=sorted.slice(1,-1),needed=k-2;
+  for(let i=0;i<needed;i++){
+   const begin=Math.floor(i*middle.length/needed),end=Math.floor((i+1)*middle.length/needed);
+   selection.push(middle[begin+Math.floor(Math.random()*(end-begin))]);
+  }
+  visits.push(...shuffle(selection));
+ }
+ while(visits.length<pages){
+  const next=shuffle(sorted);
+  if(next.length>1&&visits.at(-1)===next[0])
+   [next[0],next[1]]=[next[1],next[0]];
+  visits.push(...next.slice(0,pages-visits.length));
+ }
+ for(const w of visits)usage.set(w.base,(usage.get(w.base)||0)+1);
+ return visits;
 }
 function practicePageInfo(index=qi){
  if(lessonPages.length){
@@ -568,15 +614,24 @@ function scheduleOrderedExercises(types,source,total){
  }
  questions=[];lessonPages=[];pageBases=[];
  const noteAppearances=new Map([...intro].map(n=>[n,0]));
+ const windowUsage=new Map();
+ const selectedNotes=practiceRoots(),extremes=[selectedNotes[0],selectedNotes.at(-1)];
  let previousQuestion=null;
- const chooseQuestions=(candidates,count)=>{
+ const chooseQuestions=(candidates,count,cover=[])=>{
   const out=[];
   const mixedSymbols=["play-notation","to-notation","to-note"].includes(candidates[0]?.type);
   const kinds=mixedSymbols?[...new Set(candidates.map(q=>q.kind))]:[];
+  // Place an extreme-register question at an unpredictable point in the page.
+  const positions=shuffle(Array.from({length:count},(_,i)=>i)),forced=new Map();
+  cover.slice(0,count).forEach((n,i)=>forced.set(positions[i],n));
   for(let i=0;i<count;i++){
    // Alternate available categories (interval/chord or note/chord) in each window.
    // Otherwise numerous interval pairs could drown out the fewer valid chords.
    let options=kinds.length>1?candidates.filter(q=>q.kind===kinds[i%kinds.length]):candidates;
+   if(forced.has(i)){
+    const fitting=options.filter(q=>q.notes.includes(forced.get(i)));
+    options=fitting.length?fitting:candidates.filter(q=>q.notes.includes(forced.get(i)));
+   }
    if(noteAppearances.size){
     const least=q=>{const exposures=q.notes.filter(n=>noteAppearances.has(n)).map(n=>noteAppearances.get(n));return exposures.length?Math.min(...exposures):Infinity};
     const minimum=Math.min(...options.map(least));
@@ -593,17 +648,21 @@ function scheduleOrderedExercises(types,source,total){
  };
  byType.forEach(({type,windows},i)=>{
   let remaining=Math.floor(total/types.length)+(i<total%types.length?1:0);
-  let windowIndex=0;
   // Play by ear is presented and replayed in groups of three, without
   // changing its allocation in the full exercise or the session total.
   const groupSize=type==="play-ear"?3:pageSize;
-  while(remaining){
-   const window=windows[windowIndex%windows.length];
+  const pageCount=Math.ceil(remaining/groupSize);
+  const visits=randomizedWindowVisits(windows,pageCount,windowUsage);
+  const covered=new Set();
+  for(const window of visits){
    const amount=Math.min(groupSize,remaining),start=questions.length;
-   questions.push(...chooseQuestions(window.candidates,amount));
+   const need=extremes.filter(n=>!covered.has(n)&&window.candidates.some(q=>q.notes.includes(n)));
+   const questionsOnPage=chooseQuestions(window.candidates,amount,need);
+   questions.push(...questionsOnPage);
+   for(const n of extremes)if(questionsOnPage.some(q=>q.notes.includes(n)))covered.add(n);
    lessonPages.push({start,end:questions.length,base:window.base});
    pageBases.push(window.base);
-   remaining-=amount;windowIndex++;
+   remaining-=amount;
   }
  });
  return true;
@@ -620,7 +679,8 @@ function startPractice(s){
   if(s==="INTRODUCTION"&&intro.size)source=bank.filter(q=>q.notes.some(n=>intro.has(n)));
   if(s==="UTILIZATION"&&old.length)source=[...bank,...bank.filter(q=>old.some(r=>r.key===signature(q)))];
   if(s==="WEAKNESSES")source=bank.filter(q=>old.some(r=>r.key===signature(q)));
-  const windowCount=mode==="midi"?1:practiceWindowStarts(practiceRoots()).length;
+  // Overlapping randomization must not increase the lesson's total length.
+  const windowCount=mode==="midi"?1:coverageWindowStarts(practiceRoots()).length;
   const guided=s==="INTRODUCTION"&&intro.size>0;
   const count=mode==="midi"?(guided?72:48):guided?Math.max(72,windowCount*16):Math.max(48,windowCount*16);
   if(!scheduleOrderedExercises(types,source,count))return;
