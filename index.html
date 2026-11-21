@@ -905,7 +905,7 @@ function showQuestion(){
  selected=new Set(held.values());paintPiano();drawLine();renderLastOutcome();
  $("inputNoteNames").textContent="No notes entered";$("questionAnswers").replaceChildren();if(!continuing)$("timeline").replaceChildren();
  $("qCount").textContent=review?"Encounter "+(qi+1)+" / "+(questions.length+revealReviewRounds*revealState.pendingReviews.length)+" · "+(q.revealPhase.includes("reinforce")?"reinforcement":"introducing"):(qi+1)+" / "+questions.length;$("exerciseLabel").textContent=review?(q.revealPhase.includes("reinforce")?"Reveal · Reinforcement":"Reveal · First encounter"):titles[q.type];
- $("inputModeLabel").textContent=mode.toUpperCase();$("nextQuestion").disabled=!review;$("feedback").className="status";$("feedback").textContent=review?"Review and continue.":"Hold the target notes together, or choose an answer below.";
+ $("inputModeLabel").textContent=mode.toUpperCase();$("nextQuestion").disabled=!review;$("feedback").className="status";$("feedback").textContent=review?"Review and continue.":"Hold the target notes together.";
  $("guide").hidden=q.type!=="to-notation";$("guide").open=false;
  $("guideText").textContent="Intervals: "+intervals.slice(1).map((name,i)=>name+" ("+(i+1)+" semitones)").join(" · ")+" | Chords: "+chordDefs.map(([suffix,name,ints])=>(suffix||"Major")+" · "+name+" · "+ints.join("–")).join(" | ");
  $("revealAnswer").hidden=true;$("nextQuestion").hidden=!review;$("clearPiano").hidden=true;
@@ -1014,10 +1014,6 @@ function staffInput(){
  check.onclick=()=>submit([...new Set(chosen.values())].sort((a,b)=>a-b));
  toolbar.append(check);area.append(toolbar,paper);
 }
-function sheetHint(notes){
- if(stage!=="INTRODUCTION"&&stage!=="REVEAL")return "";
- return notes.filter(n=>intro.has(n)).map(n=>writtenName(n,pageStaff())).join(" · ");
-}
 function onPracticeStaff(q){
  return q.type==="play-sheet" || (stage==="REVEAL" && (q.kind==="chord" || q.kind==="interval"));
 }
@@ -1031,7 +1027,7 @@ function scorePage(first,end){
  let x=0,ink="",currentX=0;
  items.forEach((q,j)=>{
   const active=first+j===qi, readable=visible(q,j);
-  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):sheetHint(q.notes)):readable?q.symbol:["play-notation","scales"].includes(q.type)?q.symbol:"♪ "+(first+j+1);
+  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):"♫ "+(first+j+1)):readable?q.symbol:["play-notation","scales"].includes(q.type)?q.symbol:"♪ "+(first+j+1);
   const width=Math.max(78,label.length*7+18),cx=x+width/2;
   if(active){currentX=cx;ink+='<rect x="'+x+'" y="'+top+'" width="'+width+'" height="'+(bottom-top+24)+'" rx="5" fill="#61baff" opacity=".16"/>'}
   ink+='<g fill="'+(active?'#ffffff':first+j<qi?(q.passed===false?'#ffa49b':'#88cfa1'):'#bfcbda')+'">';
@@ -1051,7 +1047,7 @@ function drawLine(){
  else for(let i=first;i<page.end;i++){
   const q=questions[i],cell=document.createElement("span");
   cell.textContent=stage==="REVEAL"?(i<=qi?q.symbol:"?"):["play-notation","scales"].includes(q.type)?q.symbol:q.type==="play-sheet"?"♫ "+(i+1):"♪ "+(i+1);
-  if(q.type==="play-sheet"&&stage!=="REVEAL")cell.textContent=sheetHint(q.notes)||"♫ "+(i+1);
+  if(q.type==="play-sheet"&&stage!=="REVEAL")cell.textContent="♫ "+(i+1);
   if(i===qi){cell.className="current";cell.setAttribute("aria-current","step")}else if(i<qi)cell.className=q.passed===false?"miss":"passed";
   box.append(cell)
  }
