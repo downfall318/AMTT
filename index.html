@@ -106,6 +106,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <h2>Choose an instrument sound</h2>
   <p class="muted">Load an uncompressed PCM .sf2 SoundFont. Samples play locally; unsupported compressed formats use the built-in fallback.</p>
   <label class="choice" style="display:flex;flex-wrap:wrap"><span>SoundFont file (.sf2)</span><input id="sfFile" type="file" accept=".sf2"></label>
+  <label class="choice" id="presetRow" hidden>Instrument preset <select id="sfPreset"></select></label>
   <div class="row" style="margin-top:10px"><span id="sfName" class="tiny">No SoundFont loaded · Synth fallback active</span><button id="previewTone">Preview sound</button></div>
  </div>
  <div class="screen-actions"><span></span><button class="primary" data-next="s-mode">Continue</button></div>
@@ -185,7 +186,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <button id="introBtn">Introduction · Guided learning</button>
   <button id="utilBtn">Utilization · Mixed practice</button>
   <button id="weakBtn">Weaknesses · Targeted practice</button>
- </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews every item once per round for eight shuffled rounds. The question total grows before Reveal ends. Introduction remains a 72-question guided stage when new notes are selected. Completion indicators last only for this session.</p></div>
+ </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews each item in eight shuffled rounds. Utilization mixes familiar and newly introduced material across the full note pool. The question total grows before Reveal ends. Guided Introduction shortens sections when only a few distinct targets are available. Completion indicators last only for this session.</p></div>
  <div class="screen-actions"><button data-back="s-quiztypes">Back</button><button class="secondary" data-next="s-intro">Edit note introduction</button></div>
 </section>
 
@@ -257,7 +258,7 @@ let questions=[],qi=0,correct=0,done=false,selected=new Set(),audio=null,master=
 // A firmer note-on than the original velocity 100; applies to SoundFont samples and synth loudness.
 const NOTE_VELOCITY=120,VELOCITY_GAIN=NOTE_VELOCITY/100;
 const noteName=m=>N[(m%12+12)%12]+(Math.floor(m/12)-1),pc=m=>(m%12+12)%12;
-function show(id){if($("practiceOptions").open)$("practiceOptions").close();if(id==="practice")renderPiano();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$("s-"+id).classList.add("active");let order=["sound","mode","midi","key","intro","pool","quiztypes","exercises","practice","finished"],i=order.indexOf(id);$("progressBar").style.width=(Math.max(0,i)/8*100)+"%";window.scrollTo(0,0)}
+function show(id){if(id!=="practice")clearHeld();if($("practiceOptions").open)$("practiceOptions").close();if(id==="practice")renderPiano();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$("s-"+id).classList.add("active");let order=["sound","mode","midi","key","intro","pool","quiztypes","exercises","practice","finished"],i=order.indexOf(id);$("progressBar").style.width=(Math.max(0,i)/8*100)+"%";window.scrollTo(0,0)}
 const MASTER_GAIN=.9;
 function ctx(){if(!audio){
  audio=new(window.AudioContext||window.webkitAudioContext)();
@@ -266,28 +267,34 @@ function ctx(){if(!audio){
  // this disposable bus. Advancing a question must not mute a just-played key.
  playbackBus=audio.createGain();playbackBus.connect(master);
  }if(audio.state==="suspended")audio.resume()}
-function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false){
+const PRACTICE_DURATION=.7;
+const liveSamples=new Map();
+function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false,velocity=NOTE_VELOCITY,liveKey=null){
  ctx();const t=(baseTime??audio.currentTime)+delay;
  const output=lessonPlayback?playbackBus:master;
- if(soundfont&&sampleTone(m,d,t,output))return;
+ if(soundfont&&sampleTone(m,d,t,output,velocity,liveKey))return;
  let o=audio.createOscillator(),g=audio.createGain();o.type="triangle";o.frequency.value=440*Math.pow(2,(m-69)/12);
  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.65*VELOCITY_GAIN,t+.015);
  g.gain.exponentialRampToValueAtTime(.0001,t+d);
  o.connect(g);g.connect(output);o.start(t);o.stop(t+d+.03);
 }
-function sampleTone(m,d,start,output){
- const preset=soundfont.presets.find(p=>p.zones.some(z=>m>=z.low&&m<=z.high));
+function sampleTone(m,d,start,output,velocity,liveKey){
+ const preset=activePreset;
  if(!preset)return false;
- let played=false;
+ const releases=[];
  for(const zone of preset.zones){
-  if(m<zone.low||m>zone.high||NOTE_VELOCITY<zone.vlow||NOTE_VELOCITY>zone.vhigh)continue;
-  playSampleVoice(zone,zone.sample,m,d,start,false,output);
-  if(zone.partner)playSampleVoice(zone,zone.partner,m,d,start,true,output);
-  played=true;
+  if(m<zone.low||m>zone.high||velocity<zone.vlow||velocity>zone.vhigh)continue;
+  releases.push(playSampleVoice(zone,zone.sample,m,start,false,output,velocity));
+  if(zone.partner)releases.push(playSampleVoice(zone,zone.partner,m,start,true,output,velocity));
+
  }
- return played;
+ if(!releases.length)return false;
+ const releaseAt=time=>releases.forEach(release=>release(time));
+ if(liveKey===null)releaseAt(start+d);
+ else liveSamples.set(liveKey,time=>releaseAt(Math.max(time,start+d)));
+ return true;
 }
-function playSampleVoice(zone,sample,note,duration,start,partner,output){
+function playSampleVoice(zone,sample,note,start,partner,output,velocity){
  const rate=sample.rate||44100,frames=sample.end-sample.start;
  const cacheKey=sample.start+":"+frames+":"+rate;
  let buffer=sfBuffers.get(cacheKey);
@@ -307,13 +314,35 @@ function playSampleVoice(zone,sample,note,duration,start,partner,output){
  }
  const defaultPan=sample.type===4?-1:sample.type===2?1:0;
  pan.pan.value=zone.pan===null?defaultPan:Math.max(-1,Math.min(1,(partner?-1:1)*zone.pan/500));
- const level=.7*VELOCITY_GAIN*10**(-zone.attenuation/200);
- gain.gain.setValueAtTime(.0001,start);
- gain.gain.linearRampToValueAtTime(level,start+.003);
- gain.gain.setValueAtTime(level,start+Math.max(.03,duration-.09));
- gain.gain.linearRampToValueAtTime(.0001,start+duration);
- source.connect(gain);gain.connect(pan);pan.connect(output);
- source.start(start);source.stop(start+duration+.03);
+ const shape=zone.shape;
+ const seconds=tc=>tc<=-32768?0:2**(Math.max(-12000,Math.min(8000,tc))/1200);
+ const onset=start+seconds(shape.delay),peak=onset+Math.max(.001,seconds(shape.attack));
+ const holdEnd=peak+seconds(shape.hold+(60-note)*shape.keyHold);
+ const sustain=Math.max(.00001,10**(-Math.max(0,shape.sustain)/200));
+ const decay=seconds(shape.decay+(60-note)*shape.keyDecay)*Math.min(1,Math.max(0,shape.sustain)/960);
+ const level=.7*VELOCITY_GAIN*(velocity/NOTE_VELOCITY)**2*10**(-zone.attenuation/200);
+ const filter=audio.createBiquadFilter();
+ filter.type="lowpass";
+ filter.frequency.value=Math.min(audio.sampleRate*.49,8.176*2**(Math.min(13500,Math.max(1500,shape.cutoff))/1200));
+ filter.Q.value=Math.min(96,Math.max(0,shape.resonance)/10);
+ gain.gain.setValueAtTime(0,start);
+ gain.gain.setValueAtTime(0,onset);
+ gain.gain.linearRampToValueAtTime(level,peak);
+ gain.gain.setValueAtTime(level,holdEnd);
+ if(decay>0)gain.gain.exponentialRampToValueAtTime(level*sustain,holdEnd+decay);
+ source.connect(filter);filter.connect(gain);gain.connect(pan);pan.connect(output);
+ source.start(start);
+ return time=>{
+  const value=time<=onset?0:time<peak?level*(time-onset)/(peak-onset):
+   time<=holdEnd?level:level*sustain**(decay?Math.min(1,(time-holdEnd)/decay):1);
+  const end=time+Math.max(.006,seconds(shape.release));
+  // Keep the portion of an attack or decay ramp that precedes note-off.
+  gain.gain.cancelScheduledValues(time);
+  if(time>holdEnd&&decay&&time<holdEnd+decay)gain.gain.exponentialRampToValueAtTime(value,time);
+  else gain.gain.linearRampToValueAtTime(value,time);
+  gain.gain.setTargetAtTime(0,time,(end-time)/9);
+  source.stop(end);
+ };
 }
 function chord(q){ctx();const start=audio.currentTime;q.notes.forEach(m=>tone(m,.85,0,start))}
 const isBlack=m=>[1,3,6,8,10].includes(pc(m));
@@ -335,11 +364,11 @@ function scrollPicker(which,m){let el=$(which+"Scroll");el.scrollLeft=Math.max(0
 document.querySelectorAll("[data-pickscroll]").forEach(b=>b.onclick=()=>scrollPicker(b.dataset.pickscroll,+b.dataset.target));
 renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);
 requestAnimationFrame(()=>{scrollPicker("intro",60);scrollPicker("pool",60)});
-let soundfont=null,sfBuffers=new Map();
+let soundfont=null,activePreset=null,soundFontRequest=0,sfBuffers=new Map();
 function parseSF2(buffer){let dv=new DataView(buffer),u16=o=>dv.getUint16(o,true),i16=o=>dv.getInt16(o,true),u32=o=>dv.getUint32(o,true),tag=o=>String.fromCharCode(...new Uint8Array(buffer,o,4));if(tag(0)!=="RIFF"||tag(8)!=="sfbk")throw Error("Not an SF2 RIFF soundbank");let chunks={},walk=(a,z)=>{let pos=a;while(pos+8<=z){let id=tag(pos),len=u32(pos+4),begin=pos+8,end=begin+len;if(end>buffer.byteLength)break;if(id==="LIST")walk(begin+4,end);else chunks[id]={begin,len};pos=end+(len&1)}};walk(12,buffer.byteLength);
 for(let id of ["smpl","phdr","pbag","pgen","inst","ibag","igen","shdr"])if(!chunks[id])throw Error("Missing SF2 chunk "+id);
 const records=(id,size,fn)=>{let c=chunks[id],a=[];for(let o=c.begin;o+size<=c.begin+c.len;o+=size)a.push(fn(o));return a};
-let phdr=records("phdr",38,o=>({name:new TextDecoder().decode(new Uint8Array(buffer,o,20)).replace(/\0.*$/,""),bag:u16(o+24)}));let pbag=records("pbag",4,o=>({gen:u16(o)}));let pgen=records("pgen",4,o=>({op:u16(o),val:u16(o+2)}));let inst=records("inst",22,o=>({bag:u16(o+20)}));let ibag=records("ibag",4,o=>({gen:u16(o)}));let igen=records("igen",4,o=>({op:u16(o),val:u16(o+2)}));let shdr=records("shdr",46,o=>({start:u32(o+20),end:u32(o+24),loopStart:u32(o+28),loopEnd:u32(o+32),rate:u32(o+36),pitch:new Uint8Array(buffer,o+40,1)[0],correction:new Int8Array(buffer,o+41,1)[0],link:u16(o+42),type:u16(o+44)}));
+let phdr=records("phdr",38,o=>({name:new TextDecoder().decode(new Uint8Array(buffer,o,20)).replace(/\0.*$/,""),program:u16(o+20),bank:u16(o+22),bag:u16(o+24)}));let pbag=records("pbag",4,o=>({gen:u16(o)}));let pgen=records("pgen",4,o=>({op:u16(o),val:u16(o+2)}));let inst=records("inst",22,o=>({bag:u16(o+20)}));let ibag=records("ibag",4,o=>({gen:u16(o)}));let igen=records("igen",4,o=>({op:u16(o),val:u16(o+2)}));let shdr=records("shdr",46,o=>({start:u32(o+20),end:u32(o+24),loopStart:u32(o+28),loopEnd:u32(o+32),rate:u32(o+36),pitch:new Uint8Array(buffer,o+40,1)[0],correction:new Int8Array(buffer,o+41,1)[0],link:u16(o+42),type:u16(o+44)}));
 const genMap=(gens,start,end)=>{let obj={};for(let i=start;i<end;i++){let g=gens[i];if(g)obj[g.op]=g.val}return obj};
 const zoneList=(bags,gens,start,end)=>{let a=[];for(let i=start;i<end;i++)a.push(genMap(gens,bags[i].gen,bags[i+1].gen));return a};
 const range=(g,k)=>g[k]===undefined?[0,127]:[g[k]&255,g[k]>>8];let presets=[];
@@ -351,11 +380,42 @@ for(let pi=0;pi<phdr.length-1;pi++){let pzones=zoneList(pbag,pgen,phdr[pi].bag,p
   linked.link===g[53] && !sampleIds.has(sample.link) && linked.end>linked.start && linked.end*2<=chunks.smpl.len?linked:null;
  const pan=g[17]===undefined?null:sum(17);
  const r1=range(presetGen,43),r2=range(instrumentGen,43),v1=range(presetGen,44),v2=range(instrumentGen,44);
- zones.push({g,sample,partner,pan,attenuation:Math.max(0,sum(48)),tune:sum(51)*100+sum(52),low:Math.max(r1[0],r2[0]),high:Math.min(r1[1],r2[1]),vlow:Math.max(v1[0],v2[0]),vhigh:Math.min(v1[1],v2[1])})}}presets.push({name:phdr[pi].name,zones})}
+ const amount=(op,fallback=0)=>(instrumentGen[op]===undefined?fallback:signed(instrumentGen[op]))+signed(presetGen[op]);
+ const shape={delay:amount(33,-12000),attack:amount(34,-12000),hold:amount(35,-12000),
+  decay:amount(36,-12000),sustain:amount(37),release:amount(38,-12000),
+  keyHold:amount(39),keyDecay:amount(40),cutoff:amount(8,13500),resonance:amount(9)};
+ zones.push({shape,g,sample,partner,pan,attenuation:Math.max(0,sum(48)),tune:sum(51)*100+sum(52),low:Math.max(r1[0],r2[0]),high:Math.min(r1[1],r2[1]),vlow:Math.max(v1[0],v2[0]),vhigh:Math.min(v1[1],v2[1])})}}if(zones.length)presets.push({...phdr[pi],zones})}
 let pcm=new Int16Array(buffer,chunks.smpl.begin,chunks.smpl.len>>1);return{presets,pcm}}
-async function loadSoundFont(file){$("sfName").textContent="Parsing "+file.name+"…";try{let buf=await file.arrayBuffer();soundfont=parseSF2(buf);sfBuffers.clear();let count=soundfont.presets.reduce((n,p)=>n+p.zones.length,0);if(!count)throw Error("No playable sample zones");$("sfName").textContent=`Loaded ${file.name} · ${soundfont.presets.length} presets · ${count} sample zones`;$("sfName").style.color="var(--green)"}catch(e){soundfont=null;$("sfName").textContent="Could not load SoundFont: "+e.message+" · synth fallback";$("sfName").style.color="var(--red)"}}
+async function loadSoundFont(file){
+ const request=++soundFontRequest,select=$("sfPreset"),status=$("sfName");
+ soundfont=null;activePreset=null;sfBuffers.clear();
+ select.replaceChildren();$("presetRow").hidden=true;
+ status.textContent="Parsing "+file.name+"…";
+ try{
+  const buffer=await file.arrayBuffer();
+  if(request!==soundFontRequest)return;
+  const parsed=parseSF2(buffer);
+  if(!parsed.presets.length)throw Error("No playable presets");
+  soundfont=parsed;
+  parsed.presets.forEach((p,i)=>select.add(new Option((p.name.trim()||"Unnamed preset")+" · Bank "+p.bank+" · Program "+p.program,String(i))));
+  activePreset=parsed.presets.find(p=>p.bank===0&&p.program===0)||parsed.presets[0];
+  select.value=String(parsed.presets.indexOf(activePreset));
+  $("presetRow").hidden=false;
+  status.textContent="Loaded "+file.name;
+  status.style.color="var(--green)";
+ }catch(e){
+  if(request!==soundFontRequest)return;
+  status.textContent="Could not load SoundFont: "+e.message+" · synth fallback";
+  status.style.color="var(--red)";
+ }
+}
+$("sfPreset").onchange=e=>{activePreset=soundfont.presets[Number(e.target.value)]};
 $("sfFile").addEventListener("change",e=>{let f=e.target.files[0];if(f)loadSoundFont(f)});
-$("previewTone").onclick=()=>tone(60);
+$("previewTone").onclick=()=>{
+ const zones=activePreset?.zones.filter(z=>NOTE_VELOCITY>=z.vlow&&NOTE_VELOCITY<=z.vhigh)||[];
+ const notes=zones.map(z=>Math.max(z.low,Math.min(60,z.high)));
+ tone(notes.length?notes.reduce((a,b)=>Math.abs(a-60)<=Math.abs(b-60)?a:b):60);
+};
 $("skipIntro").onclick=()=>{intro.clear();skipIntro=true;renderNoteChecks("introNotes",intro)};
 $("allNotes").onclick=()=>{pool=new Set(Array.from({length:88},(_,i)=>21+i));renderNoteChecks("poolNotes",pool)};
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",()=>mode=r.value));
@@ -364,7 +424,7 @@ $("modeContinue").onclick=()=>{mode=document.querySelector('input[name="mode"]:c
 async function scanMidi(){if(!navigator.requestMIDIAccess){$("midiInfo").textContent="Web MIDI is unavailable in this browser. Try a supported desktop browser or choose Touch/Keyboard.";return}
  try{midi=await navigator.requestMIDIAccess();let sel=$("midiDevices");sel.innerHTML="";[...midi.inputs.values()].forEach(x=>{let o=document.createElement("option");o.value=x.id;o.textContent=x.name||"MIDI input";sel.append(o)});$("midiDevices").onchange();$("midiInfo").textContent=sel.options.length?"Choose your MIDI input.":"No MIDI input devices detected."}catch(e){$("midiInfo").textContent="MIDI permission was denied or unavailable."}}
 $("scanMidi").onclick=scanMidi;
-$("midiDevices").onchange=()=>{if(!midi)return;if(midiInput)midiInput.onmidimessage=null;midiInput=midi.inputs.get($("midiDevices").value);if(midiInput)midiInput.onmidimessage=e=>{let [s,n,v]=e.data;if(mode==="midi"&&$("s-practice").classList.contains("active")){const key="midi:"+s%16+":"+n;if((s&240)===144&&v>0)enter(n,key);else if((s&240)===128||((s&240)===144&&!v))release(key)}}};
+$("midiDevices").onchange=()=>{if(!midi)return;if(midiInput)midiInput.onmidimessage=null;midiInput=midi.inputs.get($("midiDevices").value);if(midiInput)midiInput.onmidimessage=e=>{let [s,n,v]=e.data;if(mode==="midi"&&$("s-practice").classList.contains("active")){const key="midi:"+s%16+":"+n;if((s&240)===144&&v>0)enter(n,key,v);else if((s&240)===128||((s&240)===144&&!v))release(key)}}};
 document.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{let dest=b.dataset.next;if(b.closest("#s-midi")&&!midiInput){$("midiInfo").textContent="Select a connected input first.";return}if(dest==="s-pool"){renderNoteChecks("poolNotes",pool)}if(dest==="s-quiztypes"&&!roots().length){$("poolLimit").textContent="Select at least one note to continue.";return}if(dest==="s-exercises")renderSelectedTypes();show(dest.slice(2))});
 document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back.slice(2)));
 // Only the GUI's DOM order controls exercise sequencing, never selection timing.
@@ -523,6 +583,7 @@ function initReveal(){
  questions=focus.flatMap(n=>revealExposures(revealNote(n),"meet"));
  rebuildRevealPages();
 }
+
 const revealReviewRounds=8;
 function revealExposures(q,phase){
  return Array.from({length:3},(_,i)=>({...revealQuestion(q,phase),exposure:i+1}));
@@ -583,11 +644,10 @@ function beginRevealReinforcement(){
  const tasks=[];
  for(let round=0;round<revealReviewRounds;round++){
   const batch=shuffle(state.pendingReviews);
-  const previous=tasks.at(-1) || questions.at(-1);
-  if(batch.length>1 && revealId(batch[0])===revealId(previous)){
+  const previous=tasks.at(-1)||questions.at(-1);
+  if(batch.length>1&&revealId(batch[0])===revealId(previous))
    [batch[0],batch[1]]=[batch[1],batch[0]];
-  }
-  for(const item of batch)tasks.push({...item});
+  tasks.push(...batch.map(item=>({...item})));
  }
  state.pendingReviews=[];
  questions=questions.concat(tasks);
@@ -620,7 +680,11 @@ function scheduleOrderedExercises(types,source,total){
   const warning=$("exerciseWarning");warning.textContent="Select at least one exercise type.";warning.hidden=false;return false;
  }
  questions=[];lessonPages=[];pageBases=[];
- const noteAppearances=new Map([...intro].map(n=>[n,0]));
+ const noteAppearances=new Map((stage==="INTRODUCTION"?[...intro]:[]).map(n=>[n,0]));
+ const materialUses=new Map();
+ const guidedUses=new Map();
+ const guided=stage==="INTRODUCTION"&&intro.size>0;
+ const targetKey=q=>q.type+":"+signature(q);
  const windowUsage=new Map();
  const selectedNotes=practiceRoots(),extremes=[selectedNotes[0],selectedNotes.at(-1)];
  let previousQuestion=null;
@@ -634,10 +698,17 @@ function scheduleOrderedExercises(types,source,total){
   for(let i=0;i<count;i++){
    // Alternate available categories (interval/chord or note/chord) in each window.
    // Otherwise numerous interval pairs could drown out the fewer valid chords.
-   let options=kinds.length>1?candidates.filter(q=>q.kind===kinds[i%kinds.length]):candidates;
+   const available=guided?candidates.filter(q=>targetKey(q)!==previousQuestion&&(guidedUses.get(targetKey(q))||0)<3):candidates;
+   if(!available.length)break;
+   let options=available;
+   if(kinds.length>1){
+    const matching=available.filter(q=>q.kind===kinds[i%kinds.length]);
+    if(matching.length)options=matching;
+   }
    if(forced.has(i)){
     const fitting=options.filter(q=>q.notes.includes(forced.get(i)));
-    options=fitting.length?fitting:candidates.filter(q=>q.notes.includes(forced.get(i)));
+    const any=fitting.length?fitting:available.filter(q=>q.notes.includes(forced.get(i)));
+    if(any.length)options=any;
    }
    if(noteAppearances.size){
     const least=q=>{const exposures=q.notes.filter(n=>noteAppearances.has(n)).map(n=>noteAppearances.get(n));return exposures.length?Math.min(...exposures):Infinity};
@@ -646,8 +717,15 @@ function scheduleOrderedExercises(types,source,total){
    }
    const alternatives=options.filter(q=>q.type+":"+signature(q)!==previousQuestion);
    if(alternatives.length)options=alternatives;
+   if(stage==="UTILIZATION"){
+    const uses=q=>materialUses.get(signature(q))||0;
+    const minimum=Math.min(...options.map(uses));
+    options=options.filter(q=>uses(q)===minimum);
+   }
    const chosen=options[Math.floor(Math.random()*options.length)];
+   if(stage==="UTILIZATION")materialUses.set(signature(chosen),(materialUses.get(signature(chosen))||0)+1);
    previousQuestion=chosen.type+":"+signature(chosen);
+   if(guided)guidedUses.set(previousQuestion,(guidedUses.get(previousQuestion)||0)+1);
    for(const n of chosen.notes)if(noteAppearances.has(n))noteAppearances.set(n,noteAppearances.get(n)+1);
    out.push({...chosen});
   }
@@ -665,17 +743,18 @@ function scheduleOrderedExercises(types,source,total){
    const amount=Math.min(groupSize,remaining),start=questions.length;
    const need=extremes.filter(n=>!covered.has(n)&&window.candidates.some(q=>q.notes.includes(n)));
    const questionsOnPage=chooseQuestions(window.candidates,amount,need);
+   if(!questionsOnPage.length)continue;
    questions.push(...questionsOnPage);
    for(const n of extremes)if(questionsOnPage.some(q=>q.notes.includes(n)))covered.add(n);
    lessonPages.push({start,end:questions.length,base:window.base});
    pageBases.push(window.base);
-   remaining-=amount;
+   remaining-=questionsOnPage.length;
   }
  });
  return true;
 }
 function startPractice(s){
- syncSetup();held.clear();pageStaffs.clear();pageBases=[];lessonPages=[];
+ syncSetup();clearHeld();pageStaffs.clear();pageBases=[];lessonPages=[];
  $("exerciseWarning").hidden=true;
  stage=s;
  if(s==="REVEAL"){
@@ -684,7 +763,6 @@ function startPractice(s){
   const types=chosenTypes(),bank=materials(),old=history.filter(x=>!x.ok);
   let source=bank;
   if(s==="INTRODUCTION"&&intro.size)source=bank.filter(q=>q.notes.some(n=>intro.has(n)));
-  if(s==="UTILIZATION"&&old.length)source=[...bank,...bank.filter(q=>old.some(r=>r.key===signature(q)))];
   if(s==="WEAKNESSES")source=bank.filter(q=>old.some(r=>r.key===signature(q)));
   // Overlapping randomization must not increase the lesson's total length.
   const windowCount=mode==="midi"?1:coverageWindowStarts(practiceRoots()).length;
@@ -904,10 +982,10 @@ function noteChoices(q){
 }
 function showQuestion(){
  following=[];
- const continuing=qi<earEnd;if(!continuing)stopAudio();const q=questions[qi],review=stage==="REVEAL";done=false;fresh=false;peak=[];if(mode==="touch")held.clear();
+ const continuing=qi<earEnd;if(!continuing)stopAudio();const q=questions[qi],review=stage==="REVEAL";done=false;fresh=false;peak=[];if(mode==="touch")clearHeld();
  if(mode!=="midi"&&renderedPianoBase!==currentPageBase()){
   // The two-octave keyboard follows the lesson page; there is no manual octave selector.
-  held.clear();selected=new Set();renderPiano();
+  clearHeld();selected=new Set();renderPiano();
  }
  selected=new Set(held.values());paintPiano();drawLine();renderLastOutcome();
  $("inputNoteNames").textContent="No notes entered";$("questionAnswers").replaceChildren();if(!continuing)$("timeline").replaceChildren();
@@ -1121,7 +1199,7 @@ function advance(message,keepScoredOutcome=false){
 function skipQuestionWrong(){
  if(!activePractice()||done)return;
  stopAudio();
- held.clear();selected.clear();fresh=false;peak=[];following=[];
+ clearHeld();selected.clear();fresh=false;peak=[];following=[];
  record(questions[qi],false,null);
  done=true;
  advance(null,true);
@@ -1137,17 +1215,26 @@ function matchHeld(ns){
  const q=questions[qi];
  if(ns.join(",")===signature(q))submit(ns);
 }
-function enter(n,source="api:"+n){
+function enter(n,source="api:"+n,velocity=NOTE_VELOCITY){
  if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&questions[qi].type==="to-sheet"))return;
  held.set(source,n);fresh=true;const ns=updateHeld();
  // Sound the key *before* checking the answer: a correct Reveal answer
  // immediately advances and auto-plays the next note. Playing this key
  // afterwards would layer the previous note over that next prompt.
- tone(n,.35);
+ tone(n,PRACTICE_DURATION,0,undefined,false,velocity,source);
  if(ns.length>=peak.length)peak=ns;
  matchHeld(ns);
 }
+function releaseSamples(source){
+ const releaseAt=liveSamples.get(source);
+ if(releaseAt){releaseAt(audio.currentTime);liveSamples.delete(source)}
+}
+function clearHeld(){
+ for(const source of liveSamples.keys())releaseSamples(source);
+ held.clear();
+}
 function release(source){
+ releaseSamples(source);
  if(!held.delete(source))return;
  const ns=updateHeld();if(!activePractice())return;
  if(ns.length){matchHeld(ns);return}
@@ -1158,7 +1245,7 @@ function release(source){
  fresh=false;peak=[]
 }
 window.addEventListener("keyup",e=>release(e.code));
-window.addEventListener("blur",()=>{if(mode==="touch")return;held.clear();fresh=false;peak=[];updateHeld()});
+window.addEventListener("blur",()=>{if(mode==="touch")return;clearHeld();fresh=false;peak=[];updateHeld()});
 function paintPiano(){for(const b of $("piano").children)b.classList.toggle("active",selected.has(+b.dataset.midi))}
 function toggleTap(n){
  if(!activePractice())return;
@@ -1166,16 +1253,16 @@ function toggleTap(n){
  // advance immediately; requiring a separate Submit made it feel stalled.
  const current=questions[qi];
  if(stage==="REVEAL"&&current.kind==="note"&&mode==="touch"){
-  tone(n,.35);
+  tone(n,PRACTICE_DURATION);
   if(n===current.notes[0])submit([n]);
   else $("feedback").textContent="Not that note — try "+current.symbol+" again.";
   return;
  }
- const key="tap:"+n;if(held.has(key))held.delete(key);else{held.set(key,n);tone(n,.35)}
+ const key="tap:"+n;if(held.has(key))held.delete(key);else{held.set(key,n);tone(n,PRACTICE_DURATION)}
  updateHeld();$("inputNoteNames").textContent=[...held.values()].map(noteName).join(" · ")||"Ready";
  $("submitTap").disabled=$("resetTap").disabled=!held.size;
 }
-$("resetTap").onclick=()=>{held.clear();updateHeld();$("submitTap").disabled=$("resetTap").disabled=true};
+$("resetTap").onclick=()=>{clearHeld();updateHeld();$("submitTap").disabled=$("resetTap").disabled=true};
 $("submitTap").onclick=()=>{
  if(!activePractice()||mode!=="touch"||!held.size)return;
  const ns=[...held.values()].sort((a,b)=>a-b);
@@ -1213,7 +1300,7 @@ window.addEventListener("keydown",e=>{
  if(physicalKey==="a"){e.preventDefault();enter(base+11,e.code);return}
  for(let n=base;n<base+24;n++)if(keycapFor(n,base)===physicalKey){
  e.preventDefault();enter(n,e.code);break}});
-function finish(){held.clear();fresh=false;stopAudio();if(qi>=questions.length)completed.add(stage);
+function finish(){clearHeld();fresh=false;stopAudio();if(qi>=questions.length)completed.add(stage);
  for(const s of completed){let b=$(stages[s]);if(!b.textContent.startsWith("✓"))b.prepend("✓ ")}
  const times=results.filter(r=>r.ms!==null);$("finalAccuracy").textContent=results.length?Math.round(correct/results.length*100)+"%":"—";
  const areas=new Map();for(const r of results){const a=areas.get(r.label)||[0,0];a[0]+=Number(r.ok);a[1]++;areas.set(r.label,a)}
