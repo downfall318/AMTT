@@ -170,7 +170,6 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <label class="choice"><input type="checkbox" value="to-sheet" checked><span><b>Transcribe to sheet</b><small>Represent pitches on a staff</small></span></label>
   <label class="choice"><input type="checkbox" value="to-notation" checked><span><b>Transcribe intervals &amp; chords</b><small>Identify the starting pitch and interval, or the chord with its root pitch</small></span></label>
   <label class="choice"><input type="checkbox" value="to-note" checked><span><b>Transcribe to note(s)</b><small>Identify individual pitches and every note in a sounding chord</small></span></label>
-  <label class="choice"><input type="checkbox" value="scales"><span><b>Scales</b><small>Identify and construct scales</small></span></label>
  </div><p class="tiny">Selected exercises run in this fixed top-to-bottom order. Play by ear uses groups of up to 3 questions without shortening the exercise. Uncheck a type to skip it; Shuffle only changes questions within each type.</p></div>
  <div class="screen-actions"><button data-back="s-pool">Back</button><button class="primary" data-next="s-exercises">Continue</button></div>
 </section>
@@ -186,7 +185,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <button id="introBtn">Introduction · Guided learning</button>
   <button id="utilBtn">Utilization · Mixed practice</button>
   <button id="weakBtn">Weaknesses · Targeted practice</button>
- </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, chord, and scale three times in a row, then reviews every item once per round for eight shuffled rounds. The question total grows before Reveal ends. Introduction remains a 72-question guided stage when new notes are selected. Completion indicators last only for this session.</p></div>
+ </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews every item once per round for eight shuffled rounds. The question total grows before Reveal ends. Introduction remains a 72-question guided stage when new notes are selected. Completion indicators last only for this session.</p></div>
  <div class="screen-actions"><button data-back="s-quiztypes">Back</button><button class="secondary" data-next="s-intro">Edit note introduction</button></div>
 </section>
 
@@ -383,7 +382,7 @@ function syncSetup(){
 const stages={REVEAL:"revealBtn",INTRODUCTION:"introBtn",UTILIZATION:"utilBtn",WEAKNESSES:"weakBtn"};
 const titles=Object.fromEntries([...document.querySelectorAll("#quizOptions input")].map(x=>[x.value,x.parentElement.querySelector("b").textContent]));
 const intervals=["unison","minor second","major second","minor third","major third","perfect fourth","tritone","perfect fifth","minor sixth","major sixth","minor seventh","major seventh","octave"];
-let started=0, cursor=0, animation=0;
+let started=0, animation=0;
 function renderSelectedTypes(){
  const box=$("selectedTypes");box.replaceChildren();$("exerciseWarning").hidden=true;
  for(const original of document.querySelectorAll("#quizOptions input")){
@@ -397,9 +396,7 @@ function materials(notes=practiceRoots()){
  const items=notes.map(n=>({notes:[n],symbol:noteName(n),kind:"note"}));
  for(const n of notes)for(const m of notes)if(m>n&&m-n<=12)items.push({notes:[n,m],symbol:noteName(n)+" + "+intervals[m-n],kind:"interval"});
  for(const q of possibleChords(notes))items.push({...q,symbol:q.symbol+" ("+noteName(q.root)+")",kind:"chord"});
- for(const n of notes)for(const [name,steps] of ($("lockCMajor").checked?[["major",[0,2,4,5,7,9,11,12]]]:[["major",[0,2,4,5,7,9,11,12]],["natural minor",[0,2,3,5,7,8,10,12]],["major pentatonic",[0,2,4,7,9,12]]])){
-  const ns=steps.map(i=>n+i);if((!$("lockCMajor").checked||pc(n)===0)&&ns.every(m=>notes.includes(m)))items.push({notes:ns,symbol:noteName(n)+" "+name,kind:"scale"});
- }return items;
+ return items;
 }
 const signature=q=>q.notes.join(",");
 const pageSize=16, held=new Map();
@@ -485,7 +482,7 @@ function revealBaseFor(notes,preferred){
 }
 function revealQuestion(q,phase){
  const {exposure,...material}=q;
- return {...material,type:q.kind==="note"?"play-sheet":q.kind==="scale"?"scales":"play-notation",revealPhase:phase};
+ return {...material,type:q.kind==="note"?"play-sheet":"play-notation",revealPhase:phase};
 }
 function rebuildRevealPages(){
  lessonPages=[];pageBases=[];
@@ -593,7 +590,7 @@ function beginRevealReinforcement(){
 function exerciseCandidates(items,type){
  // Symbol exercises assess harmonic relationships, not isolated note names.
  const symbolExercise=type==="play-notation"||type==="to-notation";
- const candidates=items.filter(q=>symbolExercise?["interval","chord"].includes(q.kind):type==="scales"?q.kind==="scale":type==="to-note"?["note","chord"].includes(q.kind):q.kind!=="scale");
+ const candidates=items.filter(q=>symbolExercise?["interval","chord"].includes(q.kind):type==="to-note"?["note","chord"].includes(q.kind):true);
  return ($("shuffle").checked?shuffle(candidates):candidates).map(q=>({...q,type,symbol:type==="play-notation"&&q.kind==="chord"?N[pc(q.root)]+q.suffix:q.symbol}));
 }
 function scheduleOrderedExercises(types,source,total){
@@ -797,9 +794,9 @@ function stopAudio(){
 function playCurrent(single=false){
  const end=stage==="REVEAL"?qi+1:playbackEnd(),whole=questions[qi].type==="play-ear";
  stopAudio();if(whole)earEnd=end;
- const q=questions[qi],seq=whole?questions.slice(qi,end).map(item=>item.notes):q.kind==="scale"?q.notes.slice(cursor).map(n=>[n]):questions.slice(qi,end).map(item=>item.notes), groups=whole?seq:seq.slice(0,single===true?1:+$("chunk").value);
+ const seq=questions.slice(qi,end).map(item=>item.notes),groups=whole?seq:seq.slice(0,single===true?1:+$("chunk").value);
  if(!groups.length)return;
- const beat=+$("beat").value,box=$("timeline");box.innerHTML=groups.map((_,i)=>'<span>'+ (!whole&&q.kind==="scale"?cursor+i+1:qi+i+1)+'</span>').join("")+'<i></i>';
+ const beat=+$("beat").value,box=$("timeline");box.innerHTML=groups.map((_,i)=>'<span>'+(qi+i+1)+'</span>').join("")+'<i></i>';
  ctx();const start=audio.currentTime;
  groups.forEach((ns,i)=>ns.forEach(n=>tone(n,beat*.00062,i*beat/1000,start,true)));
  const begin=performance.now(),line=box.lastChild;
@@ -897,7 +894,7 @@ function noteChoices(q){
 }
 function showQuestion(){
  following=[];
- const continuing=qi<earEnd;if(!continuing)stopAudio();const q=questions[qi],review=stage==="REVEAL";done=false;cursor=0;fresh=false;peak=[];if(mode==="touch")held.clear();
+ const continuing=qi<earEnd;if(!continuing)stopAudio();const q=questions[qi],review=stage==="REVEAL";done=false;fresh=false;peak=[];if(mode==="touch")held.clear();
  if(mode!=="midi"&&renderedPianoBase!==currentPageBase()){
   // The two-octave keyboard follows the lesson page; there is no manual octave selector.
   held.clear();selected=new Set();renderPiano();
@@ -910,16 +907,15 @@ function showQuestion(){
  $("guideText").textContent="Intervals: "+intervals.slice(1).map((name,i)=>name+" ("+(i+1)+" semitones)").join(" · ")+" | Chords: "+chordDefs.map(([suffix,name,ints])=>(suffix||"Major")+" · "+name+" · "+ints.join("–")).join(" | ");
  $("revealAnswer").hidden=true;$("nextQuestion").hidden=!review;$("clearPiano").hidden=true;
  $("questionHelp").textContent=review?(q.kind!=="note"?
-  (q.revealPhase==="material-meet"?"New "+q.kind:q.kind+" reinforcement")+" · Play "+q.notes.map(noteName).join(q.kind==="scale"?" → ":" + "):
+  (q.revealPhase==="material-meet"?"New "+q.kind:q.kind+" reinforcement")+" · Play "+q.notes.map(noteName).join(" + "):
   ({meet:"New note",review:"Review this note",reinforce:"Note reinforcement"}[q.revealPhase]||"Practice")+" · Listen and play " + q.notes.map(noteName).join(" · ")):
   q.type==="play-sheet"||["to-sheet","to-notation","to-note","play-ear"].includes(q.type)?"":stage==="INTRODUCTION"?q.notes.map(noteName).join(" · "):"";
  if(review&&q.exposure)$("questionHelp").textContent+=" · "+q.exposure+" of 3";
- const prompt=$("questionPrompt");prompt.textContent=review||["play-notation","scales"].includes(q.type)?q.symbol:q.type==="to-sheet"?"Place what you hear on the staff":q.type==="to-notation"?(q.kind==="interval"?"Which starting note and interval did you hear?":"Which chord and root pitch did you hear?"):q.type==="to-note"?(q.kind==="chord"?"Which notes did you hear together?":"Which note did you hear?"):"Play what you hear";
+ const prompt=$("questionPrompt");prompt.textContent=review||q.type==="play-notation"?q.symbol:q.type==="to-sheet"?"Place what you hear on the staff":q.type==="to-notation"?(q.kind==="interval"?"Which starting note and interval did you hear?":"Which chord and root pitch did you hear?"):q.type==="to-note"?(q.kind==="chord"?"Which notes did you hear together?":"Which note did you hear?"):"Play what you hear";
  prompt.hidden=q.type==="play-sheet";
  if(q.type==="play-notation"&&!review)$("questionHelp").textContent=q.kind==="interval"?
   "Play both notes together, starting on "+noteName(q.notes[0])+". The interval is "+intervals[q.notes[1]-q.notes[0]]+".":
   "Play this chord with its root at "+noteName(q.root)+".";
- if(review&&q.kind==="scale")prompt.innerHTML=q.symbol+staff(q.notes);
  if(review){$("feedback").textContent="Listen, then play the displayed "+q.kind+" (or tap Next)."}
  else if(q.type==="to-sheet")staffInput();
  else if(q.type==="to-notation"){
@@ -1027,7 +1023,7 @@ function scorePage(first,end){
  let x=0,ink="",currentX=0;
  items.forEach((q,j)=>{
   const active=first+j===qi, readable=visible(q,j);
-  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):"♫ "+(first+j+1)):readable?q.symbol:["play-notation","scales"].includes(q.type)?q.symbol:"♪ "+(first+j+1);
+  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):"♫ "+(first+j+1)):readable?q.symbol:q.type==="play-notation"?q.symbol:"♪ "+(first+j+1);
   const width=Math.max(78,label.length*7+18),cx=x+width/2;
   if(active){currentX=cx;ink+='<rect x="'+x+'" y="'+top+'" width="'+width+'" height="'+(bottom-top+24)+'" rx="5" fill="#61baff" opacity=".16"/>'}
   ink+='<g fill="'+(active?'#ffffff':first+j<qi?(q.passed===false?'#ffa49b':'#88cfa1'):'#bfcbda')+'">';
@@ -1046,7 +1042,7 @@ function drawLine(){
  if(onPracticeStaff(questions[qi]))scorePage(first,page.end);
  else for(let i=first;i<page.end;i++){
   const q=questions[i],cell=document.createElement("span");
-  cell.textContent=stage==="REVEAL"?(i<=qi?q.symbol:"?"):["play-notation","scales"].includes(q.type)?q.symbol:q.type==="play-sheet"?"♫ "+(i+1):"♪ "+(i+1);
+  cell.textContent=stage==="REVEAL"?(i<=qi?q.symbol:"?"):q.type==="play-notation"?q.symbol:q.type==="play-sheet"?"♫ "+(i+1):"♪ "+(i+1);
   if(q.type==="play-sheet"&&stage!=="REVEAL")cell.textContent="♫ "+(i+1);
   if(i===qi){cell.className="current";cell.setAttribute("aria-current","step")}else if(i<qi)cell.className=q.passed===false?"miss":"passed";
   box.append(cell)
@@ -1129,12 +1125,7 @@ function updateHeld(){
 function matchHeld(ns){
  if(!fresh||!activePractice())return;
  const q=questions[qi];
- if(q.kind==="scale"){
-  if(ns.length!==1)return;
-  if(ns[0]===q.notes[cursor]){cursor++;fresh=false;
-   if(cursor===q.notes.length)submit(q.notes);else $("feedback").textContent=cursor+" / "+q.notes.length+" played";
-  }else $("feedback").textContent="Try the next note of the scale again.";
- }else if(ns.join(",")===signature(q))submit(ns);
+ if(ns.join(",")===signature(q))submit(ns);
 }
 function enter(n,source="api:"+n){
  if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&questions[qi].type==="to-sheet"))return;
@@ -1177,7 +1168,7 @@ function toggleTap(n){
 $("resetTap").onclick=()=>{held.clear();updateHeld();$("submitTap").disabled=$("resetTap").disabled=true};
 $("submitTap").onclick=()=>{
  if(!activePractice()||mode!=="touch"||!held.size)return;
- const ns=[...held.values()];if(questions[qi].kind!=="scale")ns.sort((a,b)=>a-b);
+ const ns=[...held.values()].sort((a,b)=>a-b);
  if(stage==="REVEAL"&&ns.join(",")!==signature(questions[qi]))$("feedback").textContent="Adjust your selection and submit again.";
  submit(ns)
 };
@@ -1224,7 +1215,7 @@ function finish(){held.clear();fresh=false;stopAudio();if(qi>=questions.length)c
 for(const [s,id] of Object.entries(stages))$(id).onclick=()=>startPractice(s);
 $("playQuestion").onclick=playCurrent;$("revealAnswer").onclick=()=>{$("feedback").textContent=questions[qi].symbol+" · "+questions[qi].notes.map(noteName).join(" ")};
 $("nextQuestion").onclick=()=>advance();
-$("clearPiano").onclick=()=>{selected.clear();cursor=0;questions[qi].scaleMiss=false;paintPiano();$("inputNoteNames").textContent="No notes entered"};
+$("clearPiano").onclick=()=>{selected.clear();paintPiano();$("inputNoteNames").textContent="No notes entered"};
 $("endPractice").onclick=finish;$("backExercises").onclick=()=>{stopAudio();renderSelectedTypes();show("exercises")};
 $("introduceMore").onclick=()=>{intro.clear();renderNoteChecks("introNotes",intro);show("intro")};$("changeModes").onclick=()=>show("mode");$("repeatWeak").onclick=()=>startPractice("WEAKNESSES");$("returnExercises").onclick=()=>show("exercises");
 $("skipIntro").onclick=()=>{intro.clear();renderNoteChecks("introNotes",intro);show("pool")};
