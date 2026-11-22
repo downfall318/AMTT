@@ -92,6 +92,61 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 .previous-result.skipped{border-left-color:var(--muted);color:var(--muted)}
 #finalLastResult{margin:6px 0 10px}
 @media (orientation:landscape) and (max-height:620px){.lesson-panel #previousResult{font-size:11px;padding:1px 5px}}
+
+/* Isolated absolute-pitch identification workflow. No answers or staff are exposed in its sound prompt. */
+.ap-mode-option{border-color:#477a99;background:#20354b}
+.ap-note-select{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:8px 0}
+.ap-note-select button{font-size:14px;min-height:42px;padding:5px;white-space:nowrap}
+.ap-note-select button[aria-pressed="true"]{background:#15518a;border-color:#5cb7ff}
+.ap-setup-options{margin-top:14px}.ap-setup-options label{font-size:13px}.ap-setup-options select{margin-left:6px}
+.ap-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}.ap-bar strong{margin-right:auto}.ap-bar button{min-height:32px;padding:5px 9px}
+.ap-phase-strip{display:flex;gap:3px;overflow-x:auto;scrollbar-width:thin}.ap-phase-strip button{white-space:nowrap;font-size:11px;padding:5px 9px;min-height:30px;border:1px solid var(--line);border-radius:6px;color:var(--muted);background:var(--panel2)}
+.ap-phase-strip button.active{background:#1e4b70;color:#fff;border-color:var(--blue)}.ap-phase-strip button.finished{color:var(--green)}
+.ap-phase-strip button:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.ap-jump-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;margin-top:9px}
+.ap-jump-grid button{padding:8px;min-height:43px;text-align:center}
+.ap-jump-grid button:disabled{opacity:.45}
+.ap-jump-hint{display:block;margin-top:6px}
+.ap-progress{height:5px;background:var(--panel2);border-radius:10px;overflow:hidden;margin:7px 0}
+.ap-progress i{display:block;height:100%;width:0;background:var(--blue);transition:width .18s}
+.ap-work{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(210px,.85fr);gap:8px;align-items:start}
+.ap-prompt{font-size:clamp(23px,4vw,34px);font-weight:750;line-height:1.25;min-height:43px;margin:6px 0}
+.ap-listening{min-height:300px}.ap-listening .muted{min-height:38px}
+.ap-play-row{margin:12px 0}.ap-play-row button{min-width:135px}
+.ap-answer-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0}
+.ap-answer-grid button{min-height:49px;font-weight:650;font-size:17px;padding:6px}
+.ap-answer-grid button small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+.ap-answer-grid button:disabled{opacity:.63}.ap-answer-grid button.ap-selected{border-color:#6db7ff;background:#15518a;opacity:1}
+.ap-feedback{padding:8px 0;min-height:40px;font-size:13px}.ap-feedback.good{color:#a5efcc}.ap-feedback.bad{color:#ffb7b7}
+.ap-next-row{justify-content:space-between}.ap-next-row button{flex:1}
+.ap-stats{font-size:12px;line-height:1.6;color:var(--muted);margin-top:12px}
+.ap-report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
+.ap-report-grid .ap-metric{padding:11px;background:var(--panel2);border-radius:8px}
+.ap-metric strong{display:block;font-size:24px}.ap-metric span{color:var(--muted);font-size:12px}
+.ap-report-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:8px 0 14px}
+.ap-report-notes .ap-note-stat{background:var(--panel2);padding:7px 10px;border-radius:7px;font-size:13px}
+.ap-note-stat b{display:block;font-size:16px}.ap-note-stat small{color:var(--muted)}
+.ap-test-options{border:1px solid var(--line);border-radius:10px;padding:9px;margin:12px 0}
+.ap-test-options legend{font-size:14px;padding:0 5px}.ap-test-options .choice{margin:5px 0}
+.ap-test-options .choice small{display:block;font-size:11px;color:var(--muted)}
+.ap-add-chooser{margin-top:10px}.ap-add-chooser .ap-note-select button{min-height:43px}
+@media(max-width:700px){.ap-work{grid-template-columns:1fr}.ap-listening{min-height:0}.ap-note-select{grid-template-columns:repeat(6,minmax(0,1fr))}.ap-answer-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(orientation:landscape) and (max-height:620px){
+ body:has(#s-ap-practice.active){overflow:hidden}body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress{display:none}
+ main:has(#s-ap-practice.active){max-width:none;width:100%;margin:0}
+ #s-ap-practice.active{height:100dvh;display:flex;flex-direction:column;padding:3px 7px}
+ .ap-work{flex:1;min-height:0;grid-template-columns:minmax(0,1.5fr) minmax(195px,.75fr);overflow:hidden}
+ .ap-work>.panel{margin:0;padding:6px 9px;overflow:auto;min-height:0}
+ .ap-prompt{font-size:22px;min-height:0}.ap-listening .muted{min-height:0;margin:2px 0}
+ .ap-play-row{margin:4px 0}.ap-answer-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin:5px 0}
+ .ap-answer-grid button{min-height:34px;font-size:14px;padding:3px}.ap-feedback{min-height:0;padding:3px 0}
+ .ap-phase-strip button{min-height:27px;padding:3px 7px}.ap-progress{margin:3px 0}
+}
+
+/* Absolute-pitch tone-level control. Sound balance is applied to stimuli only. */
+.ap-volume-control{display:block;margin:10px 0 4px;font-size:13px;color:var(--fg)}
+.ap-volume-control .ap-volume-head{display:flex;justify-content:space-between;gap:8px}
+.ap-volume-control input[type="range"]{display:block;width:100%;margin:6px 0;accent-color:var(--blue);min-height:22px}
 </style>
 </head>
 <body>
@@ -114,13 +169,14 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 
 <!-- 2: Mode -->
 <section class="screen active" id="s-mode">
- <div class="step">Setup</div><h1>Choose input mode</h1>
+ <div class="step">Setup</div><h1>Choose practice mode</h1>
  <div class="grid">
   <label class="choice"><input type="radio" name="mode" value="touch" checked><span><b>Touch</b><small>Tap an on-screen piano</small></span></label>
   <label class="choice"><input type="radio" name="mode" value="keyboard"><span><b>Keyboard</b><small>Use computer keycaps</small></span></label>
   <label class="choice"><input type="radio" name="mode" value="midi"><span><b>MIDI</b><small>Use an external MIDI device</small></span></label>
+  <label class="choice ap-mode-option"><input type="radio" name="mode" value="absolute"><span><b>Absolute Pitch Training</b><small>Ear-training exercises with on-screen answers. No keyboard or MIDI input required.</small></span></label>
  </div>
- <p class="tiny">Choose notes anywhere on the 88-key selector. During touch and keyboard practice, each page tests a two-octave range; the piano updates automatically as you advance.</p>
+ <p class="tiny">Touch, Keyboard, and MIDI open the regular music-theory trainer. Absolute Pitch Training opens a separate listening curriculum with selectable exercises and optional independent tests.</p>
  <div class="screen-actions"><button data-back="s-sound">Instrument sound</button><button class="primary" id="modeContinue">Continue</button></div>
 </section>
 
@@ -132,6 +188,94 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
   <p id="midiInfo" class="tiny">MIDI requires a compatible browser and permission. If unavailable, go back and choose Touch or Keyboard.</p>
  </div>
  <div class="screen-actions"><button data-back="s-mode">Back</button><button class="primary" data-next="s-key">Continue</button></div>
+</section>
+
+<!-- Absolute pitch: a separate single-note identification pathway. -->
+<section class="screen" id="s-ap-setup">
+ <div class="step">Absolute pitch · Setup</div><h1>Train pitch memory and note identification</h1>
+ <p class="muted">Build direct note recognition without interval calculation. Start with a small pitch-class set and expand it when ready. The independent 12-note tests are optional and off by default.</p>
+ <div class="panel">
+  <h2>Pitch classes to learn now</h2>
+  <div class="ap-note-select" id="apPitchSelect" role="group" aria-label="Select pitches"></div>
+  <p class="tiny" id="apSelectedHint">Start with C, C♯ and D. These are pitch classes: C3, C4 and C5 all count as C.</p>
+  <div class="row ap-setup-options">
+   <label>Session length <select id="apLength"><option value="standard" selected>Full · deeper practice</option><option value="quick">Short · fewer trials</option></select></label>
+   <label class="choice"><input id="apAutoplay" type="checkbox" checked><span>Automatically play each new tone</span></label>
+  </div>
+  <fieldset class="ap-test-options">
+   <legend><b>Independent tests (optional)</b></legend>
+   <label class="choice"><input id="apIncludeBaseline" type="checkbox"><span><b>Baseline test</b><small>Before training · 12 possible notes, without hints or feedback</small></span></label>
+   <label class="choice"><input id="apIncludeFinal" type="checkbox"><span><b>Blind test</b><small>After training · same difficult 12-note identification test</small></span></label>
+   <p class="tiny">Both tests are off by default. Skip them while learning a few notes; enable either one whenever you want a reference-free assessment.</p>
+  </fieldset>
+  <p class="tiny">Training gives corrective feedback, close-note distractors, different octaves, and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
+ </div>
+ <div class="panel">
+  <h2>Jump directly to a mode</h2>
+  <p class="tiny">Run just one exercise without completing the earlier stages. Select an independent test above to unlock its shortcut.</p>
+  <div id="apJumpSetup" class="ap-jump-grid" aria-label="Start a specific absolute-pitch exercise"></div>
+ </div>
+ <div class="screen-actions"><button id="apSetupBack">Back to modes</button><button class="primary" id="apStart">Begin full sequence</button></div>
+ <p id="apSetupError" class="status bad" hidden role="alert"></p>
+</section>
+
+<section class="screen" id="s-ap-practice">
+ <div class="ap-bar"><strong id="apPhaseLabel"></strong><span class="tiny" id="apCounter"></span><button id="apExit" title="Leave session">End</button></div>
+ <div class="ap-phase-strip" id="apPhaseStrip" aria-label="Jump to training stage"></div>
+ <div class="ap-progress"><i id="apProgressBar"></i></div>
+ <div class="ap-work">
+  <div class="panel ap-listening">
+   <div class="step" id="apExerciseType"></div>
+   <div class="ap-prompt" id="apQuestionPrompt"></div>
+   <p class="muted" id="apDirections"></p>
+   <div class="row ap-play-row"><button class="primary" id="apReplay">▶ Hear tone</button><span class="tiny" id="apPlaybackHint"></span></div>
+   <div id="apAnswerButtons" class="ap-answer-grid"></div>
+   <div id="apFeedback" role="status" aria-live="polite" class="ap-feedback"></div>
+  </div>
+  <div class="panel ap-side">
+   <h2 class="compact-title">Training controls</h2>
+   <p class="tiny" id="apInputInstructions"></p>
+   <p class="tiny" id="apPhaseInfo"></p>
+   <label class="ap-volume-control" for="apLoudness"><span class="ap-volume-head"><span>Tone level</span><output id="apLoudnessValue" for="apLoudness">110%</output></span><input id="apLoudness" type="range" min="60" max="160" value="110" step="5"></label>
+   <div class="row ap-next-row"><button id="apSkip">Skip (incorrect)</button><button id="apNext" class="primary" disabled>Next →</button></div>
+   <div class="ap-stats" id="apRunningStats"></div>
+  </div>
+ </div>
+</section>
+
+<section class="screen" id="s-ap-finished">
+ <div class="step">Absolute pitch · Session complete</div><h1>Recognition results</h1>
+ <div class="panel">
+  <div class="ap-report-grid" id="apFinalNumbers"></div>
+  <p id="apReportDescription" class="muted"></p>
+  <h2>Performance by practiced note</h2>
+  <div id="apNoteReport" class="ap-report-notes"></div>
+  <p id="apNextSuggestion" class="muted"></p>
+ </div>
+ <div class="grid">
+  <button id="apRepeat" class="primary">Repeat full sequence</button>
+  <button id="apChooseMode" aria-expanded="false" aria-controls="apFinishModePanel">Choose another mode</button>
+  <button id="apAddNote">Introduce another pitch</button>
+  <button id="apWeakReview">Focus on weak notes</button>
+  <button id="apEditSet">Edit pitch selection</button>
+  <button id="apChangeInput">Change mode</button>
+ </div>
+ <div id="apFinishModePanel" class="panel ap-add-chooser" hidden>
+  <h2>Choose a training mode</h2>
+  <p class="tiny">Start any stage with the same selected pitches. Independent tests appear here when enabled in setup.</p>
+  <div id="apJumpFinished" class="ap-jump-grid" aria-label="Start another absolute-pitch exercise"></div>
+  <div class="row" style="margin-top:10px"><button id="apFinishModeOptions" class="secondary">Training options</button><button id="apCloseModes">Close</button></div>
+ </div>
+ <div id="apAddChooser" class="panel ap-add-chooser" hidden>
+  <h2>Choose a note to introduce</h2>
+  <p class="tiny">Select one pitch class to add to your current learning set. Previously learned notes stay selected.</p>
+  <div id="apAddPitchOptions" class="ap-note-select" role="group" aria-label="Choose the new note"></div>
+  <p class="tiny" id="apAddPitchHint">Choose a note to continue.</p>
+  <div class="row">
+   <button class="primary" id="apConfirmAdd" disabled>Introduce selected note &amp; train</button>
+   <button id="apCancelAdd" class="secondary">Cancel</button>
+  </div>
+ </div>
 </section>
 
 <!-- 4: Practice key -->
@@ -258,7 +402,7 @@ let questions=[],qi=0,correct=0,done=false,selected=new Set(),audio=null,master=
 // A firmer note-on than the original velocity 100; applies to SoundFont samples and synth loudness.
 const NOTE_VELOCITY=120,VELOCITY_GAIN=NOTE_VELOCITY/100;
 const noteName=m=>N[(m%12+12)%12]+(Math.floor(m/12)-1),pc=m=>(m%12+12)%12;
-function show(id){if(id!=="practice")clearHeld();if($("practiceOptions").open)$("practiceOptions").close();if(id==="practice")renderPiano();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$("s-"+id).classList.add("active");let order=["sound","mode","midi","key","intro","pool","quiztypes","exercises","practice","finished"],i=order.indexOf(id);$("progressBar").style.width=(Math.max(0,i)/8*100)+"%";window.scrollTo(0,0)}
+function show(id){if(id!=="practice")clearHeld();if($("practiceOptions").open)$("practiceOptions").close();if(id==="practice")renderPiano();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$("s-"+id).classList.add("active");let order=["sound","mode","midi","key","intro","pool","quiztypes","exercises","practice","finished"],i=order.indexOf(id);if(id.startsWith("ap-"))i={"ap-setup":3,"ap-practice":7,"ap-finished":8}[id];$("progressBar").style.width=(Math.max(0,i)/8*100)+"%";window.scrollTo(0,0)}
 const MASTER_GAIN=.9;
 function ctx(){if(!audio){
  audio=new(window.AudioContext||window.webkitAudioContext)();
@@ -269,23 +413,24 @@ function ctx(){if(!audio){
  }if(audio.state==="suspended")audio.resume()}
 const PRACTICE_DURATION=.7;
 const liveSamples=new Map();
-function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false,velocity=NOTE_VELOCITY,liveKey=null){
+function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false,velocity=NOTE_VELOCITY,liveKey=null,timbreOverride=null){
  ctx();const t=(baseTime??audio.currentTime)+delay;
  const output=lessonPlayback?playbackBus:master;
- if(soundfont&&sampleTone(m,d,t,output,velocity,liveKey))return;
- let o=audio.createOscillator(),g=audio.createGain();o.type="triangle";o.frequency.value=440*Math.pow(2,(m-69)/12);
+ if(soundfont&&!timbreOverride&&sampleTone(m,d,t,output,velocity,liveKey))return;
+ let o=audio.createOscillator(),g=audio.createGain();o.type=timbreOverride||"triangle";o.frequency.value=440*Math.pow(2,(m-69)/12);
  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.65*VELOCITY_GAIN,t+.015);
  g.gain.exponentialRampToValueAtTime(.0001,t+d);
  o.connect(g);g.connect(output);o.start(t);o.stop(t+d+.03);
 }
-function sampleTone(m,d,start,output,velocity,liveKey){
+function sampleTone(m,d,start,output,velocity,liveKey,voiceGain=null){
  const preset=activePreset;
  if(!preset)return false;
  const releases=[];
  for(const zone of preset.zones){
   if(m<zone.low||m>zone.high||velocity<zone.vlow||velocity>zone.vhigh)continue;
-  releases.push(playSampleVoice(zone,zone.sample,m,start,false,output,velocity));
-  if(zone.partner)releases.push(playSampleVoice(zone,zone.partner,m,start,true,output,velocity));
+   const adjustment=voiceGain?voiceGain(zone):1;
+   releases.push(playSampleVoice(zone,zone.sample,m,start,false,output,velocity,adjustment));
+  if(zone.partner)releases.push(playSampleVoice(zone,zone.partner,m,start,true,output,velocity,adjustment));
 
  }
  if(!releases.length)return false;
@@ -294,7 +439,7 @@ function sampleTone(m,d,start,output,velocity,liveKey){
  else liveSamples.set(liveKey,time=>releaseAt(Math.max(time,start+d)));
  return true;
 }
-function playSampleVoice(zone,sample,note,start,partner,output,velocity){
+function playSampleVoice(zone,sample,note,start,partner,output,velocity,voiceGain=1){
  const rate=sample.rate||44100,frames=sample.end-sample.start;
  const cacheKey=sample.start+":"+frames+":"+rate;
  let buffer=sfBuffers.get(cacheKey);
@@ -320,7 +465,7 @@ function playSampleVoice(zone,sample,note,start,partner,output,velocity){
  const holdEnd=peak+seconds(shape.hold+(60-note)*shape.keyHold);
  const sustain=Math.max(.00001,10**(-Math.max(0,shape.sustain)/200));
  const decay=seconds(shape.decay+(60-note)*shape.keyDecay)*Math.min(1,Math.max(0,shape.sustain)/960);
- const level=.7*VELOCITY_GAIN*(velocity/NOTE_VELOCITY)**2*10**(-zone.attenuation/200);
+  const level=.7*VELOCITY_GAIN*(velocity/NOTE_VELOCITY)**2*10**(-zone.attenuation/200)*voiceGain;
  const filter=audio.createBiquadFilter();
  filter.type="lowpass";
  filter.frequency.value=Math.min(audio.sampleRate*.49,8.176*2**(Math.min(13500,Math.max(1500,shape.cutoff))/1200));
@@ -420,7 +565,12 @@ $("skipIntro").onclick=()=>{intro.clear();skipIntro=true;renderNoteChecks("intro
 $("allNotes").onclick=()=>{pool=new Set(Array.from({length:88},(_,i)=>21+i));renderNoteChecks("poolNotes",pool)};
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",()=>mode=r.value));
 $("keyBack").onclick=()=>show(mode==="midi"?"midi":"mode");
-$("modeContinue").onclick=()=>{mode=document.querySelector('input[name="mode"]:checked').value;renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);$("allNotes").hidden=false;if(mode==="midi"){show("midi");scanMidi()}else show("key")};
+$("modeContinue").onclick=()=>{
+ mode=document.querySelector('input[name="mode"]:checked').value;
+ if(mode==="absolute"){apDrawSelector();apRenderJumpSetup();show("ap-setup");return;}
+ renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);$("allNotes").hidden=false;
+ if(mode==="midi"){show("midi");scanMidi()}else show("key");
+};
 async function scanMidi(){if(!navigator.requestMIDIAccess){$("midiInfo").textContent="Web MIDI is unavailable in this browser. Try a supported desktop browser or choose Touch/Keyboard.";return}
  try{midi=await navigator.requestMIDIAccess();let sel=$("midiDevices");sel.innerHTML="";[...midi.inputs.values()].forEach(x=>{let o=document.createElement("option");o.value=x.id;o.textContent=x.name||"MIDI input";sel.append(o)});$("midiDevices").onchange();$("midiInfo").textContent=sel.options.length?"Choose your MIDI input.":"No MIDI input devices detected."}catch(e){$("midiInfo").textContent="MIDI permission was denied or unavailable."}}
 $("scanMidi").onclick=scanMidi;
@@ -1362,6 +1512,472 @@ $("practiceOptions").addEventListener("click",e=>{if(e.target===$("practiceOptio
  const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();
 }});
 
+
+// Absolute pitch training is deliberately independent of music-theory Reveal.
+// Only a first response is graded. The optional baseline and final tests are
+// 12-way and reference-free, without feedback or repeat playback.
+// Absolute-pitch playback is gain matched across the new waveforms and sampled
+// presets. The older notation exercises keep their existing audio behavior.
+// Low fundamentals get subtle harmonics so phone speakers can reproduce them.
+let apLiveGain=null;
+const apSampleRmsCache=new WeakMap();
+function apSampleRms(sample){
+ if(apSampleRmsCache.has(sample))return apSampleRmsCache.get(sample);
+ const pcm=soundfont?.pcm,frames=sample.end-sample.start;
+ if(!pcm||frames<=0)return .12;
+ // Sample within a sustained portion, avoiding silence at the attack start.
+ const rate=sample.rate||44100;
+ const from=Math.min(frames-1,Math.floor(rate*.025));
+ const to=Math.min(frames,Math.max(from+1,Math.floor(rate*.30)));
+ const step=Math.max(1,Math.floor((to-from)/3500));
+ let sum=0,n=0;
+ for(let i=from;i<to;i+=step){const x=(pcm[sample.start+i]||0)/32768;sum+=x*x;n++}
+ const rms=Math.sqrt(sum/Math.max(1,n));
+ apSampleRmsCache.set(sample,rms);
+ return rms;
+}
+function apSampleBalance(zone){
+ const level=.7*VELOCITY_GAIN*10**(-zone.attenuation/200);
+ const rms=apSampleRms(zone.sample);
+ // Cap correction; preserve a sample's dynamic contour, and avoid amplifying
+ // silent/malformed samples without bound. A limiter catches loud presets.
+ return Math.min(4.5,Math.max(.8,.34/Math.max(.025,rms*level)));
+}
+function apAudioOutput(){
+ ctx();
+ const limiter=audio.createDynamicsCompressor();
+ limiter.threshold.value=-9;limiter.knee.value=5;limiter.ratio.value=8;
+ limiter.attack.value=.003;limiter.release.value=.15;
+ const gain=audio.createGain();gain.gain.value=+$('apLoudness').value/100;
+ limiter.connect(gain);gain.connect(playbackBus);
+ apLiveGain=gain;
+ return limiter;
+}
+function apSynthTone(m,d,start,output,wave){
+ const type=['sine','triangle','square','sawtooth'].includes(wave)?wave:'triangle';
+ const freq=440*Math.pow(2,(m-69)/12);
+ // These amplitudes roughly match the time-averaged RMS of the waveforms.
+ const levels={sine:.66,triangle:.80,square:.46,sawtooth:.80};
+ const peak=levels[type]*(m<60?1.08:1);
+ const env=audio.createGain(),o=audio.createOscillator();
+ const attack=.012,decay=.09,release=Math.min(.12,d*.25);
+ env.gain.setValueAtTime(.0001,start);
+ env.gain.linearRampToValueAtTime(peak,start+attack);
+ env.gain.linearRampToValueAtTime(peak*.88,start+attack+decay);
+ env.gain.setValueAtTime(peak*.88,Math.max(start+attack+decay,start+d-release));
+ env.gain.exponentialRampToValueAtTime(.0001,start+d);
+ o.type=type;o.frequency.value=freq;o.connect(env);env.connect(output);
+ o.start(start);o.stop(start+d+.02);
+ if(m<60&&(type==='sine'||type==='triangle')){
+  // Reinforce the second and third partial, retaining the original fundamental.
+  for(const [multiple,strength] of [[2,.20],[3,.075]]){
+   const harmonic=audio.createOscillator(),g=audio.createGain();
+   harmonic.type='sine';harmonic.frequency.value=freq*multiple;
+   g.gain.value=strength;harmonic.connect(g);g.connect(env);
+   harmonic.start(start);harmonic.stop(start+d+.02);
+  }
+ }
+}
+function apSoundStimulus(q){
+ ctx();const output=apAudioOutput(),start=audio.currentTime;
+ const usesSoundfont=q.timbre===null&&!!soundfont;
+ if(usesSoundfont&&sampleTone(q.midi,PRACTICE_DURATION,start,output,NOTE_VELOCITY,null,apSampleBalance))return;
+ apSynthTone(q.midi,PRACTICE_DURATION,start,output,q.timbre);
+}
+$('apLoudness').addEventListener('input',()=>{
+ $('apLoudnessValue').textContent=$('apLoudness').value+'%';
+ if(apLiveGain&&audio)apLiveGain.gain.setTargetAtTime(+$('apLoudness').value/100,audio.currentTime,.01);
+});
+
+const AP_PHASES=[
+ {id:"baseline",name:"Baseline",type:"Independent test",info:"12 possible pitch classes, mixed octaves and timbres. No references, replays, or feedback."},
+ {id:"study",name:"Listen",type:"First encounters",info:"Hear each named target pitch three times. Listen for its distinctive quality, not intervals."},
+ {id:"detect",name:"Detect",type:"Target-note detection",info:"Decide whether the sound belongs to the named target. Near-neighbor foils are included."},
+ {id:"identify",name:"Identify",type:"Isolated note identification",info:"Identify a pitch class in the fourth octave, or choose Other for pitches not yet learned."},
+ {id:"octaves",name:"Octaves",type:"Octave generalization",info:"The same pitch class now occurs in different octaves. The octave number does not affect the correct response."},
+ {id:"transfer",name:"Timbres",type:"Instrument and timbre transfer",info:"Identify pitches through changing waveforms and, when loaded, your SoundFont. Some notes remain outside the learning set."},
+ {id:"final",name:"Blind test",type:"Independent post-test",info:"12 pitch classes across registers and timbres. No cues, feedback, second attempts, or replay."}
+];
+let apFocus=new Set([0,1,2]),apSession=null,apPhaseIndex=0,apItems=[],apIndex=0;
+let apActivePhases=AP_PHASES.filter(p=>p.id!=="baseline"&&p.id!=="final");
+let apRunMode="full",apPhaseCache=new Map();
+let apAddChoice=null;
+let apAnswered=false,apPlayed=false,apStartedAt=0,apResponses=[],apEndedEarly=false;
+const apPct=(correct,total)=>total?Math.round(100*correct/total)+"%":"—";
+const apPcs=()=>[...apFocus].sort((a,b)=>a-b);
+const apName=i=>N[(i+12)%12];
+function apDrawSelector(){
+ const root=$("apPitchSelect");root.replaceChildren();
+ for(let i=0;i<12;i++){
+  const b=document.createElement("button");b.type="button";b.textContent=apName(i);
+  b.setAttribute("aria-pressed",String(apFocus.has(i)));
+  b.onclick=()=>{if(apFocus.has(i))apFocus.delete(i);else apFocus.add(i);apDrawSelector()};root.append(b);
+ }
+ $("apSelectedHint").textContent=apFocus.size?
+  apFocus.size+" pitch class"+(apFocus.size===1?"":"es")+": "+apPcs().map(apName).join(" · ")+" · Each label applies to every octave.":
+  "Choose at least one note to begin.";
+}
+function apRenderJumpChoices(id){
+ const root=$(id);root.replaceChildren();
+ for(const phase of AP_PHASES){
+  const locked=phase.id==="baseline"?!$("apIncludeBaseline").checked:phase.id==="final"?!$("apIncludeFinal").checked:false;
+  const button=document.createElement("button");button.type="button";
+  button.textContent=phase.name;button.disabled=locked;
+  button.title=locked?"Enable this optional independent test in Training options first":"Practice only "+phase.name;
+  button.setAttribute("aria-label",locked?phase.name+" (enable the optional test first)":"Start "+phase.name+" only");
+  button.onclick=()=>apBegin(phase.id);
+  root.append(button);
+ }
+}
+function apRenderJumpSetup(){apRenderJumpChoices("apJumpSetup");}
+$("apIncludeBaseline").addEventListener("change",apRenderJumpSetup);
+$("apIncludeFinal").addEventListener("change",apRenderJumpSetup);
+function apRandom(a){return a[Math.floor(Math.random()*a.length)]}
+function apPitch(pc,wide){
+ const octave=wide?apRandom([3,4,5]):4;
+ return 12*(octave+1)+pc;
+}
+function apTimbre(varied){
+ if(!varied)return null; // The chosen SoundFont preset, or the default triangle synth.
+ return apRandom([null,"sine","triangle","square","sawtooth"]);
+}
+function apSpread(items){
+ const queue=shuffle(items);
+ for(let i=1;i<queue.length;i++){
+  if(queue[i].pc!==queue[i-1].pc)continue;
+  const j=queue.findIndex((q,j)=>j>i&&q.pc!==queue[i-1].pc && (j===queue.length-1||queue[j-1].pc!==queue[i].pc));
+  if(j>=0)[queue[i],queue[j]]=[queue[j],queue[i]];
+ }
+ return queue;
+}
+function apTestItems(size){
+ return apSpread(Array.from({length:size},(_,i)=>{
+  const pitch=i%12;return{pc:pitch,midi:apPitch(pitch,true),expected:pitch,timbre:apTimbre(true)};
+ }));
+}
+function apNeighborFoil(target){
+ const other=Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p));
+ if(!other.length)return apRandom(Array.from({length:11},(_,i)=>(target+i+1)%12));
+ const neighbors=other.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
+ return apRandom(neighbors.length&&Math.random()<.75?neighbors:other);
+}
+function apAllFoils(){return Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p))}
+function apWeakWeights(){
+ const count=new Map(apPcs().map(p=>[p,1]));
+ for(const r of apResponses){
+  if(["identify","octaves","transfer"].includes(r.phase)&&r.expected!=="other"&&!r.ok)
+   count.set(r.pc,(count.get(r.pc)||1)+2);
+ }
+ return apPcs().flatMap(p=>Array(count.get(p)).fill(p));
+}
+function apMixedItems(id,count){
+ const pcs=apPcs(),outside=apAllFoils();
+ const foilCount=outside.length?Math.floor(count*.22):0,focusCount=count-foilCount;
+ const minimum=Math.max(1,Math.min(6,Math.floor(focusCount/pcs.length/1.5)));
+ const targets=pcs.flatMap(p=>Array(minimum).fill(p));
+ const weighted=apWeakWeights();
+ while(targets.length<focusCount)targets.push(apRandom(weighted));
+ const items=targets.map(p=>({pc:p,midi:apPitch(p,id!=="identify"),expected:p,timbre:apTimbre(id==="transfer")}));
+ for(let i=0;i<foilCount;i++){
+  const anchor=pcs[i%pcs.length];
+  const p=apNeighborFoil(anchor);
+  items.push({pc:p,midi:apPitch(p,id!=="identify"),expected:"other",timbre:apTimbre(id==="transfer")});
+ }
+ return apSpread(items);
+}
+function apMakePhase(id){
+ const quick=$("apLength").value==="quick",count=apFocus.size;
+ switch(id){
+  case "baseline": case "final": return apTestItems(quick?12:24);
+  case "study": return apPcs().flatMap(pc=>Array.from({length:3},()=>({pc,midi:60+pc,expected:null,timbre:null})));
+  case "detect":{
+   const baseN=quick?Math.max(12,count*4):Math.max(24,count*6),pcs=apPcs();
+   const perTarget=2*Math.ceil(baseN/pcs.length/2);
+   return apSpread(pcs.flatMap(target=>Array.from({length:perTarget},(_,i)=>{
+    const same=i%2===0,p=same?target:apNeighborFoil(target);
+    return {pc:p,targetPc:target,midi:apPitch(p,false),expected:same?"yes":"no",timbre:null};
+   })));
+  }
+  case "identify":return apMixedItems(id,quick?Math.max(18,count*3):Math.max(36,count*6));
+  case "octaves":return apMixedItems(id,quick?Math.max(18,count*3):Math.max(36,count*6));
+  case "transfer":return apMixedItems(id,quick?Math.max(12,count*3):Math.max(24,count*5));
+ }
+ return [];
+}
+function apCurrent(){return apItems[apIndex]}
+function apTestPhase(){return ["baseline","final"].includes(apActivePhases[apPhaseIndex].id)}
+function apResponseLabel(value){return value==="other"?"Other / not learned":value==="yes"?"Yes":value==="no"?"No":typeof value==="number"?apName(value):"Skipped"}
+function apRenderChoices(){
+ const phase=apActivePhases[apPhaseIndex].id,root=$("apAnswerButtons");root.replaceChildren();
+ if(phase==="study")return;
+ const choices=phase==="detect"?["yes","no"]:apTestPhase()?Array.from({length:12},(_,i)=>i):[...apPcs(),...(apAllFoils().length?["other"]:[])];
+ for(const option of choices){
+  const b=document.createElement("button");b.type="button";
+  const caption=apResponseLabel(option);
+  b.textContent=caption;
+  b.onclick=()=>apSubmit(option);
+  b.dataset.answer=String(option);
+  root.append(b);
+ }
+}
+function apUpdateProgress(){
+ $("apPhaseLabel").textContent=apActivePhases[apPhaseIndex].name;
+ $("apCounter").textContent="Question "+(apIndex+1)+" / "+apItems.length;
+ const strip=$("apPhaseStrip");strip.replaceChildren();
+ apActivePhases.forEach((p,i)=>{
+  const el=document.createElement("button");el.type="button";el.textContent=p.name;
+  const complete=apPhaseCache.get(p.id)?.completed===true;
+  el.className=i===apPhaseIndex?"active":complete?"finished":"";
+  el.title=i===apPhaseIndex?"Current stage":complete?"Restart completed stage":"Jump to "+p.name;
+  el.setAttribute("aria-current",i===apPhaseIndex?"step":"false");
+  el.setAttribute("aria-label",p.name+(complete?" completed":"")+(i===apPhaseIndex?", current stage":", jump to stage"));
+  el.onclick=()=>apJumpTo(i);
+  strip.append(el);
+ });
+ $("apProgressBar").style.width=((apIndex+(apAnswered?1:0))/apItems.length*100)+"%";
+}
+function apSavePhase(){
+ const phase=apActivePhases[apPhaseIndex];if(!phase||!apItems.length)return;
+ // Do not count a new question as completed just because the user navigated
+ // away. Answers already recorded advance on return and cannot be re-graded.
+ const consumed=apAnswered||(phase.id==="study"&&apPlayed);
+ const next=apIndex+(consumed?1:0);
+ apPhaseCache.set(phase.id,{items:apItems,index:Math.min(next,apItems.length-1),completed:next>=apItems.length});
+}
+function apJumpTo(index){
+ if(!$('s-ap-practice').classList.contains('active')||index===apPhaseIndex)return;
+ if(index<0||index>=apActivePhases.length)return;
+ apSavePhase();
+ apPhaseIndex=index;
+ const id=apActivePhases[index].id;
+ const previous=apPhaseCache.get(id);
+ // A completed stage can be voluntarily repeated, with a new question set.
+ if(!previous||previous.completed){
+  apItems=apMakePhase(id);apIndex=0;
+  apPhaseCache.set(id,{items:apItems,index:0,completed:false});
+ }else{
+  apItems=previous.items;apIndex=previous.index;
+ }
+ apShowCurrent();
+}
+function apSetControls(){
+ const phase=apActivePhases[apPhaseIndex].id;
+ $("apNext").disabled=phase!=="study"&&!apAnswered;
+ $("apNext").textContent=apIndex===apItems.length-1?(apPhaseIndex===apActivePhases.length-1?"See results →":"Next stage →"):"Next →";
+ $("apSkip").hidden=phase==="study";$("apSkip").disabled=apAnswered;
+ $("apReplay").disabled=apTestPhase()&&apPlayed;
+ $("apPlaybackHint").textContent=apTestPhase()?"One play only · no feedback":apPlayed?"Replay available":"Listen before answering";
+ for(const button of $("apAnswerButtons").children)button.disabled=apAnswered;
+ const answers=apResponses.filter(r=>r.phase===phase&&r.expected!==null);
+ $("apRunningStats").textContent=apTestPhase()?"Responses remain hidden until the session ends.":
+   answers.length?"This phase: "+apPct(answers.filter(x=>x.ok).length,answers.length)+" on "+answers.length+" first attempts.":"Only your first response counts. Correcting it later will not erase a miss.";
+}
+function apShowCurrent(){
+ stopAudio();apAnswered=false;apPlayed=false;apStartedAt=0;
+ const phase=apActivePhases[apPhaseIndex],q=apCurrent(),testing=apTestPhase();
+ $("apExerciseType").textContent=phase.type;
+ $("apPhaseInfo").textContent=phase.info;
+ $("apQuestionPrompt").textContent=phase.id==="study"?apName(q.pc)+" · "+noteName(q.midi):phase.id==="detect"?"Is this "+apName(q.targetPc)+"?":"Which note is this?";
+ $("apDirections").textContent=phase.id==="study"?"Remember the sound of this named note. You can replay it before moving on.":
+  phase.id==="detect"?"Listen to the isolated tone. Choose Yes if it matches the named target, otherwise No. No comparison tone is supplied.":
+  testing?"Identify the note by ear without a reference melody or other sounds. There are 12 possible answers.":
+  phase.id==="identify"?"Choose its pitch class or Other if it is outside your current note set.":
+  "Choose its pitch class regardless of octave or tone color; use Other if it has not been introduced.";
+ $("apFeedback").textContent=phase.id==="study"?"Listen and continue when ready.":"";
+ $("apFeedback").className="ap-feedback";
+ $("apInputInstructions").textContent="Select an on-screen answer button after hearing the tone. Answer buttons do not play notes.";
+ $("apReplay").textContent=testing?"▶ Hear once":"▶ Replay tone";
+ apRenderChoices();apUpdateProgress();apSetControls();
+ if($("apAutoplay").checked)apPlayTone();
+}
+function apPlayTone(){
+ if(!$("s-ap-practice").classList.contains("active"))return;
+ if(apTestPhase()&&apPlayed)return;
+ const q=apCurrent();if(!q)return;
+ stopAudio();
+ // This is the question stimulus; selecting an answer never emits its sound.
+ apSoundStimulus(q);
+ apPlayed=true;apStartedAt=performance.now();
+ apSetControls();
+}
+function apSubmit(value){
+ if(!$("s-ap-practice").classList.contains("active")||apAnswered)return;
+ if(!apPlayed){$("apFeedback").textContent="Play the tone before answering.";return}
+ const phase=apActivePhases[apPhaseIndex].id;
+ if(phase==="study")return;
+ const q=apCurrent(),ok=value===q.expected;
+ apAnswered=true;
+ const ms=performance.now()-apStartedAt;
+ apResponses.push({phase,pc:q.pc,targetPc:q.targetPc??null,expected:q.expected,answer:value,ok,ms,midi:q.midi,timbre:q.timbre});
+ const fb=$("apFeedback");
+ fb.className="ap-feedback "+(apTestPhase()?"":ok?"good":"bad");
+ fb.textContent=apTestPhase()?"Answer recorded. Results are hidden until the end.":
+  (ok?"✓ Correct":"✗ Incorrect")+" · "+(phase==="detect"?apName(q.pc)+" · correct response: "+apResponseLabel(q.expected):noteName(q.midi)+" · "+apResponseLabel(q.expected));
+ const b=$("apAnswerButtons").querySelector('[data-answer="'+String(value)+'"]');
+ if(b)b.classList.add("ap-selected");
+ apUpdateProgress();apSetControls();
+}
+function apSkipQuestion(){
+ if(apAnswered||apActivePhases[apPhaseIndex].id==="study")return;
+ if(!apPlayed)apPlayTone();
+ apSubmit(null);
+}
+function apNext(){
+ const phase=apActivePhases[apPhaseIndex].id;
+ if(phase!=="study"&&!apAnswered)return;
+ if(phase==="study"&&!apPlayed){$("apFeedback").textContent="Hear the example before continuing.";return;}
+ if(apIndex+1<apItems.length){apIndex++;apPhaseCache.set(phase,{items:apItems,index:apIndex,completed:false});apShowCurrent();return}
+ apPhaseCache.set(phase,{items:apItems,index:apIndex,completed:true});
+ if(apRunMode==="single"){apFinish(false);return}
+ let target=apPhaseIndex+1;
+ while(target<apActivePhases.length&&apPhaseCache.get(apActivePhases[target].id)?.completed)target++;
+ if(target>=apActivePhases.length){apFinish(false);return}
+ apPhaseIndex=target;
+ const id=apActivePhases[target].id,previous=apPhaseCache.get(id);
+ if(previous&&!previous.completed){apItems=previous.items;apIndex=previous.index}
+ else{apItems=apMakePhase(id);apIndex=0;apPhaseCache.set(id,{items:apItems,index:0,completed:false})}
+ apShowCurrent();
+}
+function apBegin(startAt=null){
+ if(!apFocus.size){$("apSetupError").textContent="Select at least one pitch class to train.";$("apSetupError").hidden=false;return}
+ $("apSetupError").hidden=true;
+ // Audio must be activated by an explicit user gesture on mobile.
+ ctx();stopAudio();apResponses=[];apPhaseIndex=apIndex=0;apEndedEarly=false;
+ apRunMode="full";apPhaseCache=new Map();
+ apActivePhases=AP_PHASES.filter(p=>p.id==="baseline"?$("apIncludeBaseline").checked:p.id==="final"?$("apIncludeFinal").checked:true);
+ if(typeof startAt==="string"){
+  const target=apActivePhases.findIndex(p=>p.id===startAt);
+  if(target<0)return;
+  apRunMode="single";apPhaseIndex=target;
+ }
+ apItems=apMakePhase(apActivePhases[apPhaseIndex].id);
+ apPhaseCache.set(apActivePhases[apPhaseIndex].id,{items:apItems,index:0,completed:false});
+ show("ap-practice");apShowCurrent();
+}
+function apMedians(records){
+ const nums=records.map(r=>r.ms).filter(Number.isFinite).sort((a,b)=>a-b);
+ if(!nums.length)return "—";
+ return (nums.length%2?nums[Math.floor(nums.length/2)]:(nums[nums.length/2-1]+nums[nums.length/2])/2)/1000;
+}
+function apAccuracy(records){return apPct(records.filter(r=>r.ok).length,records.length)}
+function apFinish(early){
+ stopAudio();apEndedEarly=early;
+ const get=id=>apResponses.filter(r=>r.phase===id),pre=get("baseline"),post=get("final");
+ const practiced=new Set(apPcs()),focusTraining=apResponses.filter(r=>["identify","octaves","transfer"].includes(r.phase)&&practiced.has(r.pc));
+ const onTarget=focusTraining.filter(r=>r.expected!=="other"),testOnFocus=post.filter(r=>practiced.has(r.pc));
+ const detection=get("detect");
+ const listened=apPhaseCache.get("study");
+ const exposureCount=listened?(listened.completed?listened.items.length:listened.index):0;
+ const metrics=[
+  ...(pre.length?[["Baseline · all 12",apAccuracy(pre),pre.length+" answers"]]:[]),
+  ...(exposureCount?[["Listen examples",String(exposureCount),"tones heard"]]:[]),
+  ...(detection.length?[["Target detection",apAccuracy(detection),detection.length+" first attempts"]]:[]),
+  ...(onTarget.length?[["Practiced notes",apAccuracy(onTarget),onTarget.length+" first attempts"]]:[]),
+  ...(post.length?[["Blind test · all 12",apAccuracy(post),post.length+" answers"]]:[]),
+  ...(testOnFocus.length?[["Blind test · focus",apAccuracy(testOnFocus),testOnFocus.length+" answers"]]:[])
+ ];
+ $("apFinalNumbers").replaceChildren();
+ for(const [label,number,info] of metrics){
+  const d=document.createElement("div");d.className="ap-metric";
+  const strong=document.createElement("strong"),name=document.createElement("span"),small=document.createElement("div");
+  strong.textContent=number;name.textContent=label;small.className="tiny";small.textContent=info;
+  d.append(strong,name,small);$("apFinalNumbers").append(d);
+ }
+ const preMedian=apMedians(pre.filter(r=>r.ok)),postMedian=apMedians(post.filter(r=>r.ok));
+ const med=seconds=>seconds==="—"?"—":seconds.toFixed(2)+" s";
+ const timing=[...(pre.length?["baseline "+med(preMedian)]:[]),...(post.length?["blind test "+med(postMedian)]:[])];
+ $("apReportDescription").textContent=(early?"Session ended before the current exercise was complete. ":"")+
+  (timing.length?"Median response time for correct independent-test answers: "+timing.join(", ")+". ":"No independent test taken in this session. ")+
+  (apRunMode==="single"?"You selected an individual exercise. ":"")+
+  "First attempts count; switching exercises never erases a recorded mistake.";
+ const report=$("apNoteReport");report.replaceChildren();
+ const stats=apPcs().map(p=>{
+  const attempts=onTarget.filter(r=>r.pc===p),blind=testOnFocus.filter(r=>r.pc===p);
+  return{pc:p,attempts,blind,acc:attempts.length?attempts.filter(r=>r.ok).length/attempts.length:0};
+ });
+ for(const x of stats){
+  const d=document.createElement("div");d.className="ap-note-stat";
+  const name=document.createElement("b"),training=document.createElement("div"),blind=document.createElement("small");
+  name.textContent=apName(x.pc);training.textContent="Practice: "+apAccuracy(x.attempts)+" ("+x.attempts.length+")";
+  blind.textContent="Blind: "+apAccuracy(x.blind)+" ("+x.blind.length+")";
+  d.append(name,training);if(post.length)d.append(blind);report.append(d);
+ }
+ const enough=onTarget.length>=Math.max(8,apFocus.size*3),readiness=enough&&onTarget.filter(r=>r.ok).length/onTarget.length>=.8;
+ const order=stats.filter(x=>x.attempts.length).sort((a,b)=>a.acc-b.acc);
+ const weak=order.filter(x=>x.acc<.8).map(x=>apName(x.pc));
+ $("apNextSuggestion").textContent=(onTarget.length?
+  (readiness?"Your focused recognition reached at least 80% on this session's practice questions. You can introduce another pitch when ready.":
+  "Focus on first-attempt accuracy before increasing the number of notes. A useful preliminary goal is at least 80% on mixed focused practice."):
+  "This exercise didn't measure focused note identification. Choose Identify, Octaves, or Timbres to measure how reliably you name your current notes.")+
+  (weak.length?" Most useful review: "+weak.join(", ")+".":"")+
+  (apFocus.size===12?" All 12 pitch classes are selected.":" Use Introduce another pitch to choose what comes next.")+
+  " Review across different octaves and sounds in a later session to check retention.";
+ $("apAddNote").disabled=apFocus.size===12;
+ $("apAddChooser").hidden=true;apAddChoice=null;
+ $("apWeakReview").disabled=!order.length;
+ // Individual exercises replay just that exercise; the full curriculum remains
+ // available separately. This is determined by the actual final active stage,
+ // including when the user jumped to it mid-session.
+ const currentPhase=apActivePhases[apPhaseIndex];
+ $("apRepeat").textContent=apRunMode==="single"&&currentPhase?
+  "Replay "+currentPhase.name:"Repeat full sequence";
+ $("apFinishModePanel").hidden=true;
+ $("apChooseMode").setAttribute("aria-expanded","false");
+ apRenderJumpChoices("apJumpFinished");
+ show("ap-finished");
+}
+function apDrawAddChoices(){
+ const root=$("apAddPitchOptions");root.replaceChildren();
+ const available=Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p));
+ for(const p of available){
+  const button=document.createElement("button");button.type="button";
+  button.textContent=apName(p);button.setAttribute("aria-pressed",String(apAddChoice===p));
+  button.onclick=()=>{apAddChoice=p;apDrawAddChoices()};root.append(button);
+ }
+ $("apConfirmAdd").disabled=apAddChoice===null||apFocus.has(apAddChoice);
+ $("apAddPitchHint").textContent=apAddChoice===null?
+  "Currently learning: "+apPcs().map(apName).join(" · ")+". Select one available note.":
+  "Introducing "+apName(apAddChoice)+" alongside "+apPcs().map(apName).join(" · ")+".";
+}
+// Absolute pitch is an independent practice mode with on-screen answers only.
+$("apSetupBack").onclick=()=>show("mode");
+$("apStart").onclick=()=>apBegin();
+$("apReplay").onclick=apPlayTone;
+$("apSkip").onclick=apSkipQuestion;
+$("apNext").onclick=apNext;
+$("apExit").onclick=()=>apFinish(true);
+$("apRepeat").onclick=()=>apBegin(apRunMode==="single"?apActivePhases[apPhaseIndex]?.id:null);
+$("apChooseMode").onclick=()=>{
+ const panel=$("apFinishModePanel"),opening=panel.hidden;
+ panel.hidden=!opening;
+ $("apChooseMode").setAttribute("aria-expanded",String(opening));
+ if(opening){apRenderJumpChoices("apJumpFinished");panel.scrollIntoView({block:"nearest"});}
+};
+$("apCloseModes").onclick=()=>{$("apFinishModePanel").hidden=true;$("apChooseMode").setAttribute("aria-expanded","false")};
+$("apFinishModeOptions").onclick=()=>{apDrawSelector();show("ap-setup")};
+$("apEditSet").onclick=()=>{apDrawSelector();show("ap-setup")};
+$("apChangeInput").onclick=()=>show("mode");
+$("apAddNote").onclick=()=>{
+ if(apFocus.size===12)return;
+ apAddChoice=null;apDrawAddChoices();$("apAddChooser").hidden=false;
+ $("apAddChooser").scrollIntoView({block:"nearest",behavior:"smooth"});
+};
+$("apCancelAdd").onclick=()=>{$("apAddChooser").hidden=true;apAddChoice=null};
+$("apConfirmAdd").onclick=()=>{
+ if(apAddChoice===null||apFocus.has(apAddChoice))return;
+ apFocus.add(apAddChoice);apAddChoice=null;$("apAddChooser").hidden=true;
+ apDrawSelector();apBegin();
+};
+$("apWeakReview").onclick=()=>{
+ const targets=apPcs().map(pc=>{
+  const attempts=apResponses.filter(r=>["identify","octaves","transfer"].includes(r.phase)&&r.pc===pc&&r.expected!=="other");
+  return{pc,score:attempts.length?attempts.filter(r=>r.ok).length/attempts.length:1};
+ }).sort((a,b)=>a.score-b.score);
+ const weak=targets.filter(x=>x.score<.8).map(x=>x.pc);
+ apFocus=new Set((weak.length?weak:targets.slice(0,Math.min(3,targets.length)).map(x=>x.pc)));
+ apDrawSelector();apBegin();
+};
+apDrawSelector();apRenderJumpSetup();
 
 window.trainerWidgets=Object.freeze({
  sheet:{render:staff},
