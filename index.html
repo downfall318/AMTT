@@ -208,7 +208,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
    <label class="choice"><input id="apIncludeFinal" type="checkbox"><span><b>Blind test</b><small>After training · same difficult 12-note identification test</small></span></label>
    <p class="tiny">Both tests are off by default. Skip them while learning a few notes; enable either one whenever you want a reference-free assessment.</p>
   </fieldset>
-  <p class="tiny">Training gives corrective feedback, close-note distractors, different octaves, and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
+  <p class="tiny">Detect trains target-note recognition within one octave; Detect Octaves uses the same Yes/No exercise across three octaves. Other stages add note naming and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
  </div>
  <div class="panel">
   <h2>Jump directly to a mode</h2>
@@ -1593,6 +1593,7 @@ const AP_PHASES=[
  {id:"baseline",name:"Baseline",type:"Independent test",info:"12 possible pitch classes, mixed octaves and timbres. No references, replays, or feedback."},
  {id:"study",name:"Listen",type:"First encounters",info:"Hear each named target pitch three times. Listen for its distinctive quality, not intervals."},
  {id:"detect",name:"Detect",type:"Target-note detection",info:"Decide whether the sound belongs to the named target. Near-neighbor foils are included."},
+ {id:"detect-octaves",name:"Detect Octaves",type:"Target detection across octaves",info:"Choose Yes when the tone has the named pitch class, regardless of octave. Both targets and near-neighbor distractors span three octaves."},
  {id:"identify",name:"Identify",type:"Isolated note identification",info:"Identify a pitch class in the fourth octave, or choose Other for pitches not yet learned."},
  {id:"octaves",name:"Octaves",type:"Octave generalization",info:"The same pitch class now occurs in different octaves. The octave number does not affect the correct response."},
  {id:"transfer",name:"Timbres",type:"Instrument and timbre transfer",info:"Identify pitches through changing waveforms and, when loaded, your SoundFont. Some notes remain outside the learning set."},
@@ -1690,13 +1691,21 @@ function apMakePhase(id){
  switch(id){
   case "baseline": case "final": return apTestItems(quick?12:24);
   case "study": return apPcs().flatMap(pc=>Array.from({length:3},()=>({pc,midi:60+pc,expected:null,timbre:null})));
-  case "detect":{
+  case "detect": case "detect-octaves":{
+   const wide=id==="detect-octaves";
    const baseN=quick?Math.max(12,count*4):Math.max(24,count*6),pcs=apPcs();
    const perTarget=2*Math.ceil(baseN/pcs.length/2);
-   return apSpread(pcs.flatMap(target=>Array.from({length:perTarget},(_,i)=>{
-    const same=i%2===0,p=same?target:apNeighborFoil(target);
-    return {pc:p,targetPc:target,midi:apPitch(p,false),expected:same?"yes":"no",timbre:null};
-   })));
+   return apSpread(pcs.flatMap(target=>{
+    // In Detect Octaves, each Yes/No pair occupies the same register;
+    // successive pairs rotate through C3–B3, C4–B4, and C5–B5.
+    // Thus answer polarity cannot be inferred from a note's octave.
+    const octaveOffset=wide?Math.floor(Math.random()*3):0;
+    return Array.from({length:perTarget},(_,i)=>{
+     const same=i%2===0,p=same?target:apNeighborFoil(target);
+     const octave=wide?3+(octaveOffset+Math.floor(i/2))%3:4;
+     return {pc:p,targetPc:target,midi:12*(octave+1)+p,expected:same?"yes":"no",timbre:null};
+    });
+   }));
   }
   case "identify":return apMixedItems(id,quick?Math.max(18,count*3):Math.max(36,count*6));
   case "octaves":return apMixedItems(id,quick?Math.max(18,count*3):Math.max(36,count*6));
@@ -1710,7 +1719,7 @@ function apResponseLabel(value){return value==="other"?"Other / not learned":val
 function apRenderChoices(){
  const phase=apActivePhases[apPhaseIndex].id,root=$("apAnswerButtons");root.replaceChildren();
  if(phase==="study")return;
- const choices=phase==="detect"?["yes","no"]:apTestPhase()?Array.from({length:12},(_,i)=>i):[...apPcs(),...(apAllFoils().length?["other"]:[])];
+ const choices=["detect","detect-octaves"].includes(phase)?["yes","no"]:apTestPhase()?Array.from({length:12},(_,i)=>i):[...apPcs(),...(apAllFoils().length?["other"]:[])];
  for(const option of choices){
   const b=document.createElement("button");b.type="button";
   const caption=apResponseLabel(option);
@@ -1777,8 +1786,9 @@ function apShowCurrent(){
  const phase=apActivePhases[apPhaseIndex],q=apCurrent(),testing=apTestPhase();
  $("apExerciseType").textContent=phase.type;
  $("apPhaseInfo").textContent=phase.info;
- $("apQuestionPrompt").textContent=phase.id==="study"?apName(q.pc)+" · "+noteName(q.midi):phase.id==="detect"?"Is this "+apName(q.targetPc)+"?":"Which note is this?";
+ $("apQuestionPrompt").textContent=phase.id==="study"?apName(q.pc)+" · "+noteName(q.midi):["detect","detect-octaves"].includes(phase.id)?"Is this "+apName(q.targetPc)+"?":"Which note is this?";
  $("apDirections").textContent=phase.id==="study"?"Remember the sound of this named note. You can replay it before moving on.":
+  phase.id==="detect-octaves"?"Choose Yes when the pitch class matches the target in ANY octave. Choose No for a different note, even if it sounds higher or lower. No reference tone is supplied.":
   phase.id==="detect"?"Listen to the isolated tone. Choose Yes if it matches the named target, otherwise No. No comparison tone is supplied.":
   testing?"Identify the note by ear without a reference melody or other sounds. There are 12 possible answers.":
   phase.id==="identify"?"Choose its pitch class or Other if it is outside your current note set.":
@@ -1812,7 +1822,7 @@ function apSubmit(value){
  const fb=$("apFeedback");
  fb.className="ap-feedback "+(apTestPhase()?"":ok?"good":"bad");
  fb.textContent=apTestPhase()?"Answer recorded. Results are hidden until the end.":
-  (ok?"✓ Correct":"✗ Incorrect")+" · "+(phase==="detect"?apName(q.pc)+" · correct response: "+apResponseLabel(q.expected):noteName(q.midi)+" · "+apResponseLabel(q.expected));
+  (ok?"✓ Correct":"✗ Incorrect")+" · "+(["detect","detect-octaves"].includes(phase)?apName(q.pc)+" · correct response: "+apResponseLabel(q.expected):noteName(q.midi)+" · "+apResponseLabel(q.expected));
  const b=$("apAnswerButtons").querySelector('[data-answer="'+String(value)+'"]');
  if(b)b.classList.add("ap-selected");
  apUpdateProgress();apSetControls();
@@ -1865,13 +1875,14 @@ function apFinish(early){
  const get=id=>apResponses.filter(r=>r.phase===id),pre=get("baseline"),post=get("final");
  const practiced=new Set(apPcs()),focusTraining=apResponses.filter(r=>["identify","octaves","transfer"].includes(r.phase)&&practiced.has(r.pc));
  const onTarget=focusTraining.filter(r=>r.expected!=="other"),testOnFocus=post.filter(r=>practiced.has(r.pc));
- const detection=get("detect");
+ const detection=get("detect"),octaveDetection=get("detect-octaves");
  const listened=apPhaseCache.get("study");
  const exposureCount=listened?(listened.completed?listened.items.length:listened.index):0;
  const metrics=[
   ...(pre.length?[["Baseline · all 12",apAccuracy(pre),pre.length+" answers"]]:[]),
   ...(exposureCount?[["Listen examples",String(exposureCount),"tones heard"]]:[]),
   ...(detection.length?[["Target detection",apAccuracy(detection),detection.length+" first attempts"]]:[]),
+  ...(octaveDetection.length?[["Detect octaves",apAccuracy(octaveDetection),octaveDetection.length+" first attempts"]]:[]),
   ...(onTarget.length?[["Practiced notes",apAccuracy(onTarget),onTarget.length+" first attempts"]]:[]),
   ...(post.length?[["Blind test · all 12",apAccuracy(post),post.length+" answers"]]:[]),
   ...(testOnFocus.length?[["Blind test · focus",apAccuracy(testOnFocus),testOnFocus.length+" answers"]]:[])
@@ -1908,7 +1919,7 @@ function apFinish(early){
  $("apNextSuggestion").textContent=(onTarget.length?
   (readiness?"Your focused recognition reached at least 80% on this session's practice questions. You can introduce another pitch when ready.":
   "Focus on first-attempt accuracy before increasing the number of notes. A useful preliminary goal is at least 80% on mixed focused practice."):
-  "This exercise didn't measure focused note identification. Choose Identify, Octaves, or Timbres to measure how reliably you name your current notes.")+
+  "This exercise didn't measure focused note identification. Detect and Detect Octaves measure target recognition; choose Identify, Octaves, or Timbres to test note naming.")+
   (weak.length?" Most useful review: "+weak.join(", ")+".":"")+
   (apFocus.size===12?" All 12 pitch classes are selected.":" Use Introduce another pitch to choose what comes next.")+
   " Review across different octaves and sounds in a later session to check retention.";
