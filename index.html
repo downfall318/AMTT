@@ -744,7 +744,7 @@ function scheduleOrderedExercises(types,source,total){
   let remaining=Math.floor(total/types.length)+(i<total%types.length?1:0);
   // Play by ear is presented and replayed in groups of three, without
   // changing its allocation in the full exercise or the session total.
-  const groupSize=type==="play-ear"?($("singleNotes").checked?1:3):pageSize;
+  const groupSize=type==="play-ear"?3:pageSize;
   const pageCount=Math.ceil(remaining/groupSize);
   const visits=randomizedWindowVisits(windows,pageCount,windowUsage);
   const covered=new Set();
@@ -880,6 +880,12 @@ function playbackEnd(){
  let end=qi+1;
  while(end<limit&&questions[end].type===questions[qi].type)end++;
  return end;
+}
+function singleEarPage(){
+ return $("singleNotes").checked && stage!=="REVEAL" && questions[qi]?.type==="play-ear";
+}
+function stopEarPromptOnInput(){
+ if(singleEarPage() && earEnd>qi)stopAudio();
 }
 let earEnd=-1;
 function stopAudio(){
@@ -1027,9 +1033,10 @@ function showQuestion(){
  $("piano").closest(".panel").hidden=writing;
  if(writing)$("feedback").textContent="Tap a pitch, adjust its accidental, then Submit. Middle C gets a short ledger line when used.";
  const pagePlayback=continuing||q.type==="play-ear";
- $("playQuestion").textContent=review?(q.kind==="chord"?"▶ Replay chord":"▶ Replay note"):(q.type==="play-ear"?"▶ Replay ear group":pagePlayback?"▶ Play remaining exercise":"▶ Play chunk");
+ $("playQuestion").textContent=review?(q.kind==="chord"?"▶ Replay chord":"▶ Replay note"):(q.type==="play-ear"?(singleEarPage()?"▶ Play remaining notes":"▶ Replay ear group"):pagePlayback?"▶ Play remaining exercise":"▶ Play chunk");
  $("chunk").parentElement.hidden=review||pagePlayback;
- if(!continuing&&(review||["to-sheet","to-note","to-notation","play-ear"].includes(q.type)))playCurrent(true);started=performance.now();
+ const manualEarPlayback=singleEarPage() && qi>0 && questions[qi-1].type==="play-ear";
+ if(!continuing&&!manualEarPlayback&&(review||["to-sheet","to-note","to-notation","play-ear"].includes(q.type)))playCurrent(true);started=performance.now();
 }
 function staffInput(){
  const host=$("questionAnswers"),area=document.createElement("div");
@@ -1226,6 +1233,7 @@ function matchHeld(ns){
 }
 function enter(n,source="api:"+n,velocity=NOTE_VELOCITY){
  if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&questions[qi].type==="to-sheet"))return;
+ stopEarPromptOnInput();
  held.set(source,n);fresh=true;const ns=updateHeld();
  // Sound the key *before* checking the answer: a correct Reveal answer
  // immediately advances and auto-plays the next note. Playing this key
@@ -1267,6 +1275,7 @@ function toggleTap(n){
   else $("feedback").textContent="Not that note — try "+current.symbol+" again.";
   return;
  }
+ stopEarPromptOnInput();
  const key="tap:"+n;if(held.has(key))held.delete(key);else{held.set(key,n);tone(n,PRACTICE_DURATION)}
  updateHeld();$("inputNoteNames").textContent=[...held.values()].map(noteName).join(" · ")||"Ready";
  $("submitTap").disabled=$("resetTap").disabled=!held.size;
