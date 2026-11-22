@@ -777,7 +777,8 @@ function startPractice(s){
   const windowCount=mode==="midi"?1:coverageWindowStarts(practiceRoots()).length;
   const guided=s==="INTRODUCTION"&&intro.size>0;
   const count=mode==="midi"?(guided?72:48):guided?Math.max(72,windowCount*16):Math.max(48,windowCount*16);
-  if(!scheduleOrderedExercises(types,source,count))return;
+  const reviewTypes=s==="WEAKNESSES"?types.filter(type=>exerciseCandidates(source,type).length):types;
+  if(!scheduleOrderedExercises(reviewTypes,source,count))return;
  }
  if(!questions.length){const warning=$("exerciseWarning");warning.textContent="No matching material. Select the notes needed for an exercise or choose another exercise type.";warning.hidden=false;return}
  qi=correct=0;results=[];lastOutcome=null;renderLastOutcome();
@@ -1169,12 +1170,21 @@ function markLastOutcome(q,status,index=qi){
  lastOutcome={number:index+1,type:stage==="REVEAL"?"Reveal":titles[q.type]||q.type,status};
  renderLastOutcome();
 }
-function record(q,ok,ms){q.passed=ok;let entry={key:signature(q),label:q.symbol,ok,ms};results.push(entry);history.push(entry);if(ok)correct++;markLastOutcome(q,ok,questions.indexOf(q))}
+const scoredQuestions=new WeakSet();
+function record(q,ok,ms){
+ if(scoredQuestions.has(q))return;
+ scoredQuestions.add(q);
+ q.passed=ok;let entry={key:signature(q),label:q.symbol,ok,ms};results.push(entry);history.push(entry);if(ok)correct++;markLastOutcome(q,ok,questions.indexOf(q))}
 let following=[];
 function submit(ns){
  if(done)return;
  const q=questions[qi],value=ns.join(","),matches=signature(q)===value;
- if(stage==="REVEAL"){if(matches)advance("Correct");return}
+ if(!matches)record(q,false,performance.now()-started);
+ if(stage==="REVEAL"){
+  if(matches)advance("Correct",scoredQuestions.has(q));
+  else $("feedback").textContent="Marked for review. Try the target again.";
+  return;
+ }
  const piano=["play-ear","play-sheet","play-notation"].includes(q.type);
  if(piano){
   const next=questions.slice(qi+1,qi+4);
@@ -1193,13 +1203,13 @@ function submit(ns){
    return;
   }
   following=[];
-  if(!matches){$("feedback").textContent="Try the highlighted target again.";if(mode==="touch")$("resetTap").click();return}
+  if(!matches){$("feedback").textContent="Marked for review. Try the highlighted target again.";if(mode==="touch")$("resetTap").click();return}
  }
  if(earEnd<0)stopAudio();
- record(q,matches,performance.now()-started);done=true;advance(matches?"Correct":"Answer recorded");
+ record(q,matches,performance.now()-started);done=true;advance(q.passed?"Correct":matches?"Corrected · marked for review":"Answer recorded");
 }
 function advance(message,keepScoredOutcome=false){
- if(stage==="REVEAL"&&!keepScoredOutcome)markLastOutcome(questions[qi],message==="Correct"?true:null);
+ if(stage==="REVEAL"&&!keepScoredOutcome&&!scoredQuestions.has(questions[qi]))markLastOutcome(questions[qi],message==="Correct"?true:null);
  if(stage==="REVEAL"){
   completeReveal(questions[qi]);
   // Do not finish after the introductions: append all earned reviews before
@@ -1256,7 +1266,7 @@ function release(source){
  const ns=updateHeld();if(!activePractice())return;
  if(ns.length){matchHeld(ns);return}
  if(fresh&&peak.length){
-  if(stage!=="REVEAL"&&["play-sheet","play-ear","play-notation"].includes(questions[qi].type))submit(peak);
+  if(stage==="REVEAL"||["play-sheet","play-ear","play-notation"].includes(questions[qi].type))submit(peak);
   else{$("feedback").textContent="Try that target again."}
  }
  fresh=false;peak=[]
@@ -1271,8 +1281,7 @@ function toggleTap(n){
  const current=questions[qi];
  if(stage==="REVEAL"&&current.kind==="note"&&mode==="touch"){
   tone(n,PRACTICE_DURATION);
-  if(n===current.notes[0])submit([n]);
-  else $("feedback").textContent="Not that note — try "+current.symbol+" again.";
+  submit([n]);
   return;
  }
  stopEarPromptOnInput();
