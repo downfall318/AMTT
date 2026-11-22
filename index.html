@@ -164,7 +164,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 <!-- 7: quiz types -->
 <section class="screen" id="s-quiztypes">
  <div class="step">Setup</div><h1>How do you want to be quizzed?</h1>
- <div class="panel"><div class="grid" id="quizOptions">
+ <div class="panel"><label class="choice"><input type="checkbox" id="singleNotes"><span><b>Single notes only</b><small>Practice one pitch per question, including ear training and review.</small></span></label><div class="grid" id="quizOptions">
   <label class="choice"><input type="checkbox" value="play-sheet" checked><span><b>Play the sheet music</b><small>Read staff notation and perform it</small></span></label>
   <label class="choice"><input type="checkbox" value="play-notation" checked><span><b>Play intervals &amp; chords</b><small>Play named intervals (minor/major seconds, thirds, etc.) and chord symbols such as Csus2</small></span></label>
   <label class="choice"><input type="checkbox" value="play-ear" checked><span><b>Play by ear</b><small>Listen to a short group of up to three questions, then play the notes</small></span></label>
@@ -429,7 +429,15 @@ document.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{let dest=b.da
 document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back.slice(2)));
 // Only the GUI's DOM order controls exercise sequencing, never selection timing.
 const exerciseOrder=[...document.querySelectorAll('#quizOptions input')].map(x=>x.value);
-function chosenTypes(){const checked=new Set([...document.querySelectorAll('#quizOptions input:checked')].map(x=>x.value));return exerciseOrder.filter(type=>checked.has(type))}
+function updateNoteMode(){
+ for(const input of document.querySelectorAll('#quizOptions input[value$="-notation"]')){
+  input.disabled=$("singleNotes").checked;
+  input.closest("label").hidden=input.disabled;
+ }
+}
+$("singleNotes").onchange=updateNoteMode;
+updateNoteMode();
+function chosenTypes(){const checked=new Set([...document.querySelectorAll('#quizOptions input:checked:enabled')].map(x=>x.value));return exerciseOrder.filter(type=>checked.has(type))}
 function roots(){return [...new Set([...pool,...intro])].sort((a,b)=>a-b)}
 // The C-major lock changes staff notation only. Note selection always controls the tested pitches.
 function practiceRoots(){return roots()}
@@ -439,7 +447,7 @@ const setups=new Map(),timers=[];
 let history=[],completed=new Set();
 function syncSetup(){
  const ordered=set=>[...set].sort((a,b)=>a-b);
- const key=JSON.stringify([mode,ordered(intro),ordered(pool),chosenTypes().sort(),$("lockCMajor").checked]);
+ const key=JSON.stringify([mode,ordered(intro),ordered(pool),chosenTypes().sort(),$("singleNotes").checked,$("lockCMajor").checked]);
  if(!setups.has(key))setups.set(key,{history:[],completed:new Set()});
  ({history,completed}=setups.get(key));
  for(const [s,id] of Object.entries(stages)){
@@ -453,7 +461,7 @@ const intervals=["unison","minor second","major second","minor third","major thi
 let started=0, animation=0;
 function renderSelectedTypes(){
  const box=$("selectedTypes");box.replaceChildren();$("exerciseWarning").hidden=true;
- for(const original of document.querySelectorAll("#quizOptions input")){
+ for(const original of document.querySelectorAll("#quizOptions input:enabled")){
   const label=document.createElement("label"), input=document.createElement("input");
   label.className="choice";input.type="checkbox";input.checked=original.checked;
   input.onchange=()=>{original.checked=input.checked;syncSetup()};label.append(input,titles[original.value]);box.append(label);
@@ -462,6 +470,7 @@ function renderSelectedTypes(){
 }
 function materials(notes=practiceRoots()){
  const items=notes.map(n=>({notes:[n],symbol:noteName(n),kind:"note"}));
+ if($("singleNotes").checked)return items;
  for(const n of notes)for(const m of notes)if(m>n&&m-n<=12)items.push({notes:[n,m],symbol:noteName(n)+" + "+intervals[m-n],kind:"interval"});
  for(const q of possibleChords(notes))items.push({...q,symbol:q.symbol+" ("+noteName(q.root)+")",kind:"chord"});
  return items;
@@ -735,7 +744,7 @@ function scheduleOrderedExercises(types,source,total){
   let remaining=Math.floor(total/types.length)+(i<total%types.length?1:0);
   // Play by ear is presented and replayed in groups of three, without
   // changing its allocation in the full exercise or the session total.
-  const groupSize=type==="play-ear"?3:pageSize;
+  const groupSize=type==="play-ear"?($("singleNotes").checked?1:3):pageSize;
   const pageCount=Math.ceil(remaining/groupSize);
   const visits=randomizedWindowVisits(windows,pageCount,windowUsage);
   const covered=new Set();
