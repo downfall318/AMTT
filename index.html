@@ -208,7 +208,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
    <label class="choice"><input id="apIncludeFinal" type="checkbox"><span><b>Blind test</b><small>After training · same difficult 12-note identification test</small></span></label>
    <p class="tiny">Both tests are off by default. Skip them while learning a few notes; enable either one whenever you want a reference-free assessment.</p>
   </fieldset>
-  <p class="tiny">Detect trains target-note recognition within one octave; Detect Octaves uses the same Yes/No exercise across three octaves. Other stages add note naming and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
+  <p class="tiny">Detect trains target-note recognition within one octave; Detect Octaves uses the same Yes/No exercise across three octaves. Question order avoids repeating identical tones when alternatives are available. Other stages add note naming and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
  </div>
  <div class="panel">
   <h2>Jump directly to a mode</h2>
@@ -1642,25 +1642,94 @@ function apTimbre(varied){
  if(!varied)return null; // The chosen SoundFont preset, or the default triangle synth.
  return apRandom([null,"sine","triangle","square","sawtooth"]);
 }
+// Arrange the entire question set, rather than just swapping adjacent pitch
+// classes.  Avoid back-to-back identical sounds and short loops, while keeping
+// Yes/No answers and target labels from forming predictable fixed patterns.
+// When a session has only one available sound, repetitions are unavoidable.
+// Shuffle pitch classes while respecting how often each occurs. Independent
+// random picks (and local swaps) stranded repeated notes at the end of some
+// sessions. Largest-remaining-class selection keeps them evenly dispersed.
+// Individual note/octave variations and answer order are still randomized.
+// Randomize the whole question set without trapping identical pitches at the
+// end. The look-ahead check keeps an adjacent-repeat-free completion possible
+// whenever the available pitch-class counts permit one. It does NOT impose a
+// predictable alternating or round-robin answer pattern.
 function apSpread(items){
- const queue=shuffle(items);
- for(let i=1;i<queue.length;i++){
-  if(queue[i].pc!==queue[i-1].pc)continue;
-  const j=queue.findIndex((q,j)=>j>i&&q.pc!==queue[i-1].pc && (j===queue.length-1||queue[j-1].pc!==queue[i].pc));
-  if(j>=0)[queue[i],queue[j]]=[queue[j],queue[i]];
+ if(items.length<2)return [...items];
+ const buckets=new Map(),result=[];
+ for(const q of shuffle(items)){
+  if(!buckets.has(q.pc))buckets.set(q.pc,[]);
+  buckets.get(q.pc).push(q);
  }
- return queue;
+ let remaining=items.length;
+ while(remaining){
+  const last=result.at(-1),second=result.at(-2),third=result.at(-3);
+  const available=[...buckets].filter(([,arr])=>arr.length>0);
+  const different=available.filter(([pc])=>!last||pc!==last.pc);
+  const alternatives=different.length?different:available;
+  const viable=alternatives.filter(([chosen])=>{
+   const left=remaining-1;
+   for(const [pc,bucket] of buckets){
+    const count=bucket.length-(pc===chosen?1:0);
+    // A class equal to the last chosen one cannot start the remainder.
+    if(count>Math.floor((left+(pc===chosen?0:1))/2))return false;
+   }
+   return true;
+  });
+  const choices=viable.length?viable:alternatives;
+  // Weight mildly toward numerous classes, but leave the order genuinely
+  // randomized. In particular, don't force an obvious Yes/No alternation.
+  const weights=choices.map(([pc,arr])=>{
+   const cyclePenalty=second&&second.pc===pc?0.72:1;
+   return (arr.length+.5)*cyclePenalty;
+  });
+  const total=weights.reduce((sum,w)=>sum+w,0);
+  let ticket=Math.random()*total,chosen=0;
+  for(let i=0;i<weights.length;i++){ticket-=weights[i];if(ticket<=0){chosen=i;break}}
+  const bucket=choices[chosen][1];
+  // If a class has multiple octave/timbre examples, choose the one least
+  // recently heard. The score includes noise so ties aren't deterministic.
+  let best=0,bestScore=Infinity;
+  for(let i=0;i<bucket.length;i++){
+   const q=bucket[i];let score=Math.random()*20;
+   if(last&&q.midi===last.midi)score+=10000;
+   if(second&&q.midi===second.midi)score+=1500;
+   if(third&&q.midi===third.midi)score+=600;
+   if(second&&q.targetPc!==undefined&&q.targetPc===last?.targetPc&&q.targetPc===second.targetPc)score+=100;
+   if(second&&q.expected!==null&&q.expected===last?.expected&&q.expected===second.expected)score+=110;
+   if(score<bestScore){bestScore=score;best=i}
+  }
+  result.push(bucket.splice(best,1)[0]);remaining--;
+ }
+ return result;
 }
 function apTestItems(size){
  return apSpread(Array.from({length:size},(_,i)=>{
   const pitch=i%12;return{pc:pitch,midi:apPitch(pitch,true),expected:pitch,timbre:apTimbre(true)};
  }));
 }
-function apNeighborFoil(target){
+function apNeighborFoil(target,usage=null){
  const other=Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p));
- if(!other.length)return apRandom(Array.from({length:11},(_,i)=>(target+i+1)%12));
- const neighbors=other.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
- return apRandom(neighbors.length&&Math.random()<.75?neighbors:other);
+ const candidates=other.length?other:Array.from({length:11},(_,i)=>(target+i+1)%12);
+ const neighbors=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
+ const eligible=neighbors.length&&Math.random()<.75?neighbors:candidates;
+ if(!usage)return apRandom(eligible);
+ // Cycle through different near-neighbor distractors, rather than repeatedly
+ // selecting the same one by chance.
+ const minimum=Math.min(...eligible.map(p=>usage.get(p)||0));
+ const least=eligible.filter(p=>(usage.get(p)||0)===minimum);
+ const p=apRandom(least);
+ usage.set(p,(usage.get(p)||0)+1);
+ return p;
+}
+function apDetectionFoil(target,usage){
+ const candidates=Array.from({length:11},(_,i)=>(target+i+1)%12);
+ const near=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
+ const eligible=Math.random()<.75?near:candidates;
+ const minimum=Math.min(...eligible.map(p=>usage.get(p)||0));
+ const p=apRandom(eligible.filter(p=>(usage.get(p)||0)===minimum));
+ usage.set(p,(usage.get(p)||0)+1);
+ return p;
 }
 function apAllFoils(){return Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p))}
 function apWeakWeights(){
@@ -1673,15 +1742,20 @@ function apWeakWeights(){
 }
 function apMixedItems(id,count){
  const pcs=apPcs(),outside=apAllFoils();
- const foilCount=outside.length?Math.floor(count*.22):0,focusCount=count-foilCount;
+ // One or two practiced notes otherwise overwhelm Identify with identical
+ // C4/C♯4 questions. More varied Other/distractor trials keep the exercise
+ // useful without replacing the selected focus notes.
+ const foilRate=pcs.length===1?.60:pcs.length===2?.40:.22;
+ const foilCount=outside.length?Math.min(count-pcs.length,Math.floor(count*foilRate)):0,focusCount=count-foilCount;
  const minimum=Math.max(1,Math.min(6,Math.floor(focusCount/pcs.length/1.5)));
  const targets=pcs.flatMap(p=>Array(minimum).fill(p));
  const weighted=apWeakWeights();
  while(targets.length<focusCount)targets.push(apRandom(weighted));
  const items=targets.map(p=>({pc:p,midi:apPitch(p,id!=="identify"),expected:p,timbre:apTimbre(id==="transfer")}));
+ const foilUsage=new Map();
  for(let i=0;i<foilCount;i++){
   const anchor=pcs[i%pcs.length];
-  const p=apNeighborFoil(anchor);
+  const p=apNeighborFoil(anchor,foilUsage);
   items.push({pc:p,midi:apPitch(p,id!=="identify"),expected:"other",timbre:apTimbre(id==="transfer")});
  }
  return apSpread(items);
@@ -1695,13 +1769,17 @@ function apMakePhase(id){
    const wide=id==="detect-octaves";
    const baseN=quick?Math.max(12,count*4):Math.max(24,count*6),pcs=apPcs();
    const perTarget=2*Math.ceil(baseN/pcs.length/2);
+   const foilUsage=new Map();
    return apSpread(pcs.flatMap(target=>{
     // In Detect Octaves, each Yes/No pair occupies the same register;
     // successive pairs rotate through C3–B3, C4–B4, and C5–B5.
     // Thus answer polarity cannot be inferred from a note's octave.
     const octaveOffset=wide?Math.floor(Math.random()*3):0;
     return Array.from({length:perTarget},(_,i)=>{
-     const same=i%2===0,p=same?target:apNeighborFoil(target);
+     // With only one practiced note, use more varied negatives. Exactly
+     // 50/50 would make a no-repeat sequence alternate Yes/No predictably.
+     const same=pcs.length===1?(i%5<2):i%2===0;
+     const p=same?target:apDetectionFoil(target,foilUsage);
      const octave=wide?3+(octaveOffset+Math.floor(i/2))%3:4;
      return {pc:p,targetPc:target,midi:12*(octave+1)+p,expected:same?"yes":"no",timbre:null};
     });
