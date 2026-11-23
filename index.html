@@ -163,6 +163,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
 #s-ap-practice .ap-feedback{min-height:20px;text-align:center;padding:0;font-size:12px}
 #s-ap-practice summary{padding:4px;color:var(--muted);cursor:pointer}
 @media(max-height:400px){.ap-wheels{width:min(100%,70dvh)}#apKeys{height:25px}#s-ap-practice .ap-bar{margin:0}}
+.accidental-menu label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;min-height:32px}.accidental-menu{gap:6px}
 </style>
 </head>
 <body>
@@ -259,7 +260,6 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
   <p id="apReportDescription" class="muted"></p>
   <h2>Performance by practiced note</h2>
   <div id="apNoteReport" class="ap-report-notes"></div>
-  <p id="apNextSuggestion" class="muted"></p>
  </div>
  <div class="grid">
   <button id="apRepeat" class="primary">Repeat full sequence</button>
@@ -1235,14 +1235,12 @@ function staffInput(){
   if(pos%2===0)row.classList.add(anchors.some(a=>pos>=a&&pos<=a+8)?"staff-rule":"staff-ledger");
   row.setAttribute("aria-label","Place "+noteName(n));row.setAttribute("aria-pressed","false");
   row.onclick=()=>{
+   if(!menu.hidden&&menu.previousElementSibling===row){menu.hidden=true;return}
    menu.replaceChildren();menu.hidden=false;row.after(menu);
    const keyFor=d=>pos+","+d;
    const variants=[[1,"♯ Sharp"],[0,"♮ Natural"],[-1,"♭ Flat"]];
    const hasNotes=()=>variants.some(([d])=>chosen.has(keyFor(d)));
-   // The first explicit accidental replaces the initial natural on a new position.
    const implied=ctx.alter[pos%7];
-   let provisional=!hasNotes()&&n+implied>=21&&n+implied<=108;
-   if(provisional)chosen.set(keyFor(implied),n+implied);
    function repaint(){
     row.replaceChildren();
     const active=variants.filter(([d])=>chosen.has(keyFor(d)));
@@ -1257,17 +1255,22 @@ function staffInput(){
     }
     row.setAttribute("aria-pressed",String(hasNotes()));check.disabled=!chosen.size;
     updateLedgerLines();
-    for(const btn of menu.querySelectorAll("[data-delta]"))btn.setAttribute("aria-pressed",String(chosen.has(keyFor(Number(btn.dataset.delta)))));
+    for(const box of menu.querySelectorAll("input")){
+     const delta=Number(box.value);
+     box.checked=chosen.has(keyFor(delta));
+     box.disabled=n+delta<21||n+delta>108||(!box.checked&&chosen.size>=3);
+    }
    }
    for(const [d,label] of variants){
-    const btn=document.createElement("button");btn.textContent=label;btn.dataset.delta=d;btn.disabled=n+d<21||n+d>108;
-    btn.onclick=()=>{
-     if(provisional){chosen.delete(keyFor(implied));provisional=false}
-     if(chosen.has(keyFor(d)))chosen.delete(keyFor(d));else chosen.set(keyFor(d),n+d);
+    const wrapper=document.createElement("label"),box=document.createElement("input");
+    box.type="checkbox";box.value=d;
+    box.onchange=()=>{
+     if(!box.checked)chosen.delete(keyFor(d));
+     else if(chosen.size<3)chosen.set(keyFor(d),n+d);
      repaint();
-    };menu.append(btn);
+    };
+    wrapper.append(box,label);menu.append(wrapper);
    }
-   const close=document.createElement("button");close.textContent="Done";close.onclick=()=>{menu.hidden=true;row.focus()};menu.append(close);
    repaint();
   };paper.append(row);rows.set(pos,row);
  }
@@ -2037,16 +2040,7 @@ function apFinish(early){
   blind.textContent="Blind: "+apAccuracy(x.blind)+" ("+x.blind.length+")";
   d.append(name,training);if(post.length)d.append(blind);report.append(d);
  }
- const enough=onTarget.length>=Math.max(8,apFocus.size*3),readiness=enough&&onTarget.filter(r=>r.ok).length/onTarget.length>=.8;
  const order=stats.filter(x=>x.attempts.length).sort((a,b)=>a.acc-b.acc);
- const weak=order.filter(x=>x.acc<.8).map(x=>apName(x.pc));
- $("apNextSuggestion").textContent=(onTarget.length?
-  (readiness?"Your focused recognition reached at least 80% on this session's practice questions. You can introduce another pitch when ready.":
-  "Focus on first-attempt accuracy before increasing the number of notes. A useful preliminary goal is at least 80% on mixed focused practice."):
-  "This exercise didn't measure focused note identification. Detect and Detect Octaves measure target recognition; choose Identify, Octaves, or Timbres to test note naming.")+
-  (weak.length?" Most useful review: "+weak.join(", ")+".":"")+
-  (apFocus.size===12?" All 12 pitch classes are selected.":" Use Introduce another pitch to choose what comes next.")+
-  " Review across different octaves and sounds in a later session to check retention.";
  $("apAddNote").disabled=apFocus.size===12;
  $("apAddChooser").hidden=true;apAddChoice=null;
  $("apWeakReview").disabled=!order.length;
