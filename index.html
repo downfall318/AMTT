@@ -147,6 +147,22 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 .ap-volume-control{display:block;margin:10px 0 4px;font-size:13px;color:var(--fg)}
 .ap-volume-control .ap-volume-head{display:flex;justify-content:space-between;gap:8px}
 .ap-volume-control input[type="range"]{display:block;width:100%;margin:6px 0;accent-color:var(--blue);min-height:22px}
+
+body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress{display:none}
+#s-ap-practice{max-width:420px;margin:auto}
+#s-ap-practice .ap-prompt{font-size:20px;min-height:0;text-align:center;margin:3px}
+.ap-wheels{position:relative;display:flex;margin:auto;width:min(100%,max(215px,76dvh));text-align:center}
+.ap-wheels>div{width:50%}.ap-wheels small{color:var(--muted)}
+.ap-wheels svg{display:block;width:100%;overflow:visible}.ap-wheels text{pointer-events:none;font:bold 6px system-ui;fill:white;text-anchor:middle;dominant-baseline:central}
+.ap-wheels [role=button]{cursor:pointer}.ap-wheels [role=button]:focus-visible{outline:none;stroke:white;stroke-width:1.5}
+#apReplay{position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-radius:50%;width:38px;height:38px;min-height:0;padding:0}
+#apKeys{position:relative;width:65%;height:38px;margin:5px auto}
+#apKeys i{position:absolute;bottom:0;height:100%;background:#dde4ed;border:1px solid #35445a;border-radius:0 0 3px 3px}
+#apKeys i.black{bottom:auto;top:0;height:62%;background:#17202d;z-index:1}
+#apKeys i.marked{background:var(--pitch);box-shadow:inset 0 0 0 2px white}
+#s-ap-practice .ap-feedback{min-height:20px;text-align:center;padding:0;font-size:12px}
+#s-ap-practice summary{padding:4px;color:var(--muted);cursor:pointer}
+@media(max-height:400px){.ap-wheels{width:min(100%,70dvh)}#apKeys{height:25px}#s-ap-practice .ap-bar{margin:0}}
 </style>
 </head>
 <body>
@@ -197,7 +213,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
  <div class="panel">
   <h2>Pitch classes to learn now</h2>
   <div class="ap-note-select" id="apPitchSelect" role="group" aria-label="Select pitches"></div>
-  <p class="tiny" id="apSelectedHint">Start with C, C♯ and D. These are pitch classes: C3, C4 and C5 all count as C.</p>
+  <p class="tiny" id="apSelectedHint">Start with C. These are pitch classes: C3, C4 and C5 all count as C.</p>
   <div class="row ap-setup-options">
    <label>Session length <select id="apLength"><option value="standard" selected>Full · deeper practice</option><option value="quick">Short · fewer trials</option></select></label>
    <label class="choice"><input id="apAutoplay" type="checkbox" checked><span>Automatically play each new tone</span></label>
@@ -221,26 +237,19 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 
 <section class="screen" id="s-ap-practice">
  <div class="ap-bar"><strong id="apPhaseLabel"></strong><span class="tiny" id="apCounter"></span><button id="apExit" title="Leave session">End</button></div>
- <div class="ap-phase-strip" id="apPhaseStrip" aria-label="Jump to training stage"></div>
  <div class="ap-progress"><i id="apProgressBar"></i></div>
- <div class="ap-work">
-  <div class="panel ap-listening">
-   <div class="step" id="apExerciseType"></div>
-   <div class="ap-prompt" id="apQuestionPrompt"></div>
-   <p class="muted" id="apDirections"></p>
-   <div class="row ap-play-row"><button class="primary" id="apReplay">▶ Hear tone</button><span class="tiny" id="apPlaybackHint"></span></div>
-   <div id="apAnswerButtons" class="ap-answer-grid"></div>
-   <div id="apFeedback" role="status" aria-live="polite" class="ap-feedback"></div>
-  </div>
-  <div class="panel ap-side">
-   <h2 class="compact-title">Training controls</h2>
-   <p class="tiny" id="apInputInstructions"></p>
-   <p class="tiny" id="apPhaseInfo"></p>
-   <label class="ap-volume-control" for="apLoudness"><span class="ap-volume-head"><span>Tone level</span><output id="apLoudnessValue" for="apLoudness">110%</output></span><input id="apLoudness" type="range" min="60" max="160" value="110" step="5"></label>
-   <div class="row ap-next-row"><button id="apSkip">Skip (incorrect)</button><button id="apNext" class="primary" disabled>Next →</button></div>
-   <div class="ap-stats" id="apRunningStats"></div>
-  </div>
+ <div id="apQuestionPrompt" class="ap-prompt"></div>
+ <div class="ap-wheels">
+  <div><small id="apWheelCaption">Question</small><svg id="apResultWheel" viewBox="-50 -50 100 100" aria-label="Pitch feedback"></svg></div>
+  <div><small>Answer</small><svg id="apAnswerButtons" viewBox="-50 -50 100 100" aria-label="Pitch input"></svg></div>
+  <button id="apReplay" aria-label="Replay tone" title="Play tone">▶</button>
  </div>
+ <div id="apKeys" aria-label="Pitch feedback keyboard"></div>
+ <div id="apFeedback" role="status" aria-live="polite" class="ap-feedback"></div>
+ <div class="row ap-next-row"><button id="apSkip">Skip</button><button id="apNext" class="primary">Next →</button></div>
+ <details><summary>Session controls</summary>
+ <div class="ap-phase-strip" id="apPhaseStrip"></div><div id="apExerciseType"></div><p id="apDirections"></p><p id="apPhaseInfo"></p><p id="apPlaybackHint"></p>
+ <label for="apLoudness">Tone level <output id="apLoudnessValue">110%</output></label><input id="apLoudness" type="range" min="60" max="160" value="110" step="5"><div id="apRunningStats"></div></details>
 </section>
 
 <section class="screen" id="s-ap-finished">
@@ -1591,7 +1600,7 @@ $('apLoudness').addEventListener('input',()=>{
 
 const AP_PHASES=[
  {id:"baseline",name:"Baseline",type:"Independent test",info:"12 possible pitch classes, mixed octaves and timbres. No references, replays, or feedback."},
- {id:"study",name:"Listen",type:"First encounters",info:"Hear each named target pitch three times. Listen for its distinctive quality, not intervals."},
+ {id:"study",name:"Listen",type:"First encounters",info:"Hear each named pitch in octaves 3, 4 and 5. Listen for its distinctive quality, not intervals."},
  {id:"detect",name:"Detect",type:"Target-note detection",info:"Decide whether the sound belongs to the named target. Near-neighbor foils are included."},
  {id:"detect-octaves",name:"Detect Octaves",type:"Target detection across octaves",info:"Choose Yes when the tone has the named pitch class, regardless of octave. Both targets and near-neighbor distractors span three octaves."},
  {id:"identify",name:"Identify",type:"Isolated note identification",info:"Identify a pitch class in the fourth octave, or choose Other for pitches not yet learned."},
@@ -1599,7 +1608,7 @@ const AP_PHASES=[
  {id:"transfer",name:"Timbres",type:"Instrument and timbre transfer",info:"Identify pitches through changing waveforms and, when loaded, your SoundFont. Some notes remain outside the learning set."},
  {id:"final",name:"Blind test",type:"Independent post-test",info:"12 pitch classes across registers and timbres. No cues, feedback, second attempts, or replay."}
 ];
-let apFocus=new Set([0,1,2]),apSession=null,apPhaseIndex=0,apItems=[],apIndex=0;
+let apFocus=new Set([0]),apSession=null,apPhaseIndex=0,apItems=[],apIndex=0;
 let apActivePhases=AP_PHASES.filter(p=>p.id!=="baseline"&&p.id!=="final");
 let apRunMode="full",apPhaseCache=new Map();
 let apAddChoice=null;
@@ -1711,7 +1720,7 @@ function apTestItems(size){
 function apNeighborFoil(target,usage=null){
  const other=Array.from({length:12},(_,p)=>p).filter(p=>!apFocus.has(p));
  const candidates=other.length?other:Array.from({length:11},(_,i)=>(target+i+1)%12);
- const neighbors=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
+ const neighbors=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)===1);
  const eligible=neighbors.length&&Math.random()<.75?neighbors:candidates;
  if(!usage)return apRandom(eligible);
  // Cycle through different near-neighbor distractors, rather than repeatedly
@@ -1724,7 +1733,7 @@ function apNeighborFoil(target,usage=null){
 }
 function apDetectionFoil(target,usage){
  const candidates=Array.from({length:11},(_,i)=>(target+i+1)%12);
- const near=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)<=2);
+ const near=candidates.filter(p=>Math.min((p-target+12)%12,(target-p+12)%12)===1);
  const eligible=Math.random()<.75?near:candidates;
  const minimum=Math.min(...eligible.map(p=>usage.get(p)||0));
  const p=apRandom(eligible.filter(p=>(usage.get(p)||0)===minimum));
@@ -1764,7 +1773,7 @@ function apMakePhase(id){
  const quick=$("apLength").value==="quick",count=apFocus.size;
  switch(id){
   case "baseline": case "final": return apTestItems(quick?12:24);
-  case "study": return apPcs().flatMap(pc=>Array.from({length:3},()=>({pc,midi:60+pc,expected:null,timbre:null})));
+  case "study": return apPcs().flatMap(pc=>shuffle([48,60,72]).map(base=>({pc,midi:base+pc,expected:null,timbre:null})));
   case "detect": case "detect-octaves":{
    const wide=id==="detect-octaves";
    const baseN=quick?Math.max(12,count*4):Math.max(24,count*6),pcs=apPcs();
@@ -1794,17 +1803,55 @@ function apMakePhase(id){
 function apCurrent(){return apItems[apIndex]}
 function apTestPhase(){return ["baseline","final"].includes(apActivePhases[apPhaseIndex].id)}
 function apResponseLabel(value){return value==="other"?"Other / not learned":value==="yes"?"Yes":value==="no"?"No":typeof value==="number"?apName(value):"Skipped"}
-function apRenderChoices(){
- const phase=apActivePhases[apPhaseIndex].id,root=$("apAnswerButtons");root.replaceChildren();
- if(phase==="study")return;
- const choices=["detect","detect-octaves"].includes(phase)?["yes","no"]:apTestPhase()?Array.from({length:12},(_,i)=>i):[...apPcs(),...(apAllFoils().length?["other"]:[])];
- for(const option of choices){
-  const b=document.createElement("button");b.type="button";
-  const caption=apResponseLabel(option);
-  b.textContent=caption;
-  b.onclick=()=>apSubmit(option);
-  b.dataset.answer=String(option);
-  root.append(b);
+const apColors=["#ec5151","#f57636","#f89e30","#efbf39","#dad94c","#99cb53","#4dbf77","#3fbaba","#4b9bd8","#627adb","#9569cf","#ca64b9"];
+function apRenderChoices(answer){
+ const phase=apActivePhases[apPhaseIndex].id,q=apCurrent(),study=phase==="study",detect=q.targetPc!==undefined;
+ const revealed=study||(!apTestPhase()&&apAnswered);
+ const previous=!revealed&&!apTestPhase()&&apIndex>0?apItems[apIndex-1]:null;
+ const feedback=revealed?q:previous;
+ const shownPc=feedback?.pc??q.targetPc;
+ $("apWheelCaption").textContent=previous?"Previous feedback":apAnswered&&!apTestPhase()?"Feedback":"Question";
+ const prompt=study?noteName(q.midi):detect?apName(q.targetPc)+"?":"?";
+ const point=(r,a)=>[r*Math.sin(a),-r*Math.cos(a)];
+ for(const input of [true,false]){
+  const root=$(input?"apAnswerButtons":"apResultWheel");root.replaceChildren();
+  function add(tag,attrs,parent=root){
+   const el=document.createElementNS("http://www.w3.org/2000/svg",tag);
+   for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);
+   parent.append(el);return el;
+  }
+  function bind(g,val,label){
+   if(!input||study||apAnswered)return;
+   for(const [k,v] of Object.entries({role:"button",tabindex:0,"aria-label":label}))g.setAttribute(k,v);
+   g.onclick=()=>apSubmit(val);
+   g.onkeydown=e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();apSubmit(val)}};
+  }
+  for(let pc=0;pc<12;pc++){
+   const a=pc*Math.PI/6,edge=Math.PI/12;
+   const enabled=detect?pc===q.targetPc:apTestPhase()||apFocus.has(pc);
+   const val=detect?"yes":pc;
+   const marked=input?enabled&&answer===val:pc===shownPc;
+   const g=add("g",{}),color=apColors[pc];
+   add("path",{d:"M0 0 L"+point(49,a-edge)+" A49 49 0 0 1 "+point(49,a+edge)+" Z",fill:color,"fill-opacity":marked?.65:input&&enabled?.30:.10,stroke:"#263242","stroke-width":.6},g);
+   const [x,y]=point(37,a);
+   add("circle",{cx:x,cy:y,r:6.8,fill:marked?color:"#1a2330",stroke:marked?"white":color,"stroke-width":marked?1.8:.7},g);
+   add("text",{x,y},g).textContent=apName(pc);
+   if(enabled)bind(g,val,apName(pc));
+  }
+  const g=add("g",{}),outside=detect?"no":"other";
+  const centerActive=input?answer===outside:feedback?.expected===outside;
+  add("circle",{r:16,fill:centerActive?"#475e75":"#182231",stroke:centerActive?"white":"#556477"},g);
+  const allow=detect||(!apTestPhase()&&apFocus.size<12&&!study);
+  if(!input){add("text",{x:0,y:0},g).textContent=prompt}
+  else if(allow){add("text",{x:0,y:0},g).textContent=detect?"No":"Not in set";bind(g,outside,detect?"No":"Not in set")}
+ }
+ const keys=$("apKeys");keys.replaceChildren();let white=0;
+ for(let pc=0;pc<12;pc++){
+  const black=[1,3,6,8,10].includes(pc),key=document.createElement("i");
+  key.className=(black?"black ":"")+(shownPc===pc?"marked":"");
+  key.style.left=(white-(black?.3:0))*100/7+"%";
+  key.style.width=(black?.6:1)*100/7+"%";key.style.setProperty("--pitch",apColors[pc]);
+  keys.append(key);if(!black)white++;
  }
 }
 function apUpdateProgress(){
@@ -1854,7 +1901,7 @@ function apSetControls(){
  $("apSkip").hidden=phase==="study";$("apSkip").disabled=apAnswered;
  $("apReplay").disabled=apTestPhase()&&apPlayed;
  $("apPlaybackHint").textContent=apTestPhase()?"One play only · no feedback":apPlayed?"Replay available":"Listen before answering";
- for(const button of $("apAnswerButtons").children)button.disabled=apAnswered;
+
  const answers=apResponses.filter(r=>r.phase===phase&&r.expected!==null);
  $("apRunningStats").textContent=apTestPhase()?"Responses remain hidden until the session ends.":
    answers.length?"This phase: "+apPct(answers.filter(x=>x.ok).length,answers.length)+" on "+answers.length+" first attempts.":"Only your first response counts. Correcting it later will not erase a miss.";
@@ -1873,8 +1920,8 @@ function apShowCurrent(){
   "Choose its pitch class regardless of octave or tone color; use Other if it has not been introduced.";
  $("apFeedback").textContent=phase.id==="study"?"Listen and continue when ready.":"";
  $("apFeedback").className="ap-feedback";
- $("apInputInstructions").textContent="Select an on-screen answer button after hearing the tone. Answer buttons do not play notes.";
- $("apReplay").textContent=testing?"▶ Hear once":"▶ Replay tone";
+
+ $("apReplay").setAttribute("aria-label",testing?"Hear tone once":"Replay tone");
  apRenderChoices();apUpdateProgress();apSetControls();
  if($("apAutoplay").checked)apPlayTone();
 }
@@ -1901,8 +1948,7 @@ function apSubmit(value){
  fb.className="ap-feedback "+(apTestPhase()?"":ok?"good":"bad");
  fb.textContent=apTestPhase()?"Answer recorded. Results are hidden until the end.":
   (ok?"✓ Correct":"✗ Incorrect")+" · "+(["detect","detect-octaves"].includes(phase)?apName(q.pc)+" · correct response: "+apResponseLabel(q.expected):noteName(q.midi)+" · "+apResponseLabel(q.expected));
- const b=$("apAnswerButtons").querySelector('[data-answer="'+String(value)+'"]');
- if(b)b.classList.add("ap-selected");
+ apRenderChoices(value);
  apUpdateProgress();apSetControls();
 }
 function apSkipQuestion(){
