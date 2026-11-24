@@ -216,6 +216,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
   <div class="ap-note-select" id="apPitchSelect" role="group" aria-label="Select pitches"></div>
   <p class="tiny" id="apSelectedHint">Start with C. These are pitch classes: C3, C4 and C5 all count as C.</p>
   <div class="row ap-setup-options">
+   <div class="row" role="group" aria-label="Octave range"><label>Lowest octave <select id="apLow"></select></label><label>Highest octave <select id="apHigh"></select></label></div>
    <label>Session length <select id="apLength"><option value="standard" selected>Full · deeper practice</option><option value="quick">Short · fewer trials</option></select></label>
    <label class="choice"><input id="apAutoplay" type="checkbox" checked><span>Automatically play each new tone</span></label>
   </div>
@@ -225,7 +226,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
    <label class="choice"><input id="apIncludeFinal" type="checkbox"><span><b>Blind test</b><small>After training · same difficult 12-note identification test</small></span></label>
    <p class="tiny">Both tests are off by default. Skip them while learning a few notes; enable either one whenever you want a reference-free assessment.</p>
   </fieldset>
-  <p class="tiny">Detect trains target-note recognition within one octave; Detect Octaves uses the same Yes/No exercise across three octaves. Question order avoids repeating identical tones when alternatives are available. Other stages add note naming and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
+  <p class="tiny">Detect trains target-note recognition within one octave; Detect Octaves uses the same Yes/No exercise across your selected range. Question order avoids repeating identical tones when alternatives are available. Other stages add note naming and multiple timbres. Your first answer counts; a later correction never erases a miss.</p>
  </div>
  <div class="panel">
   <h2>Jump directly to a mode</h2>
@@ -1603,9 +1604,9 @@ $('apLoudness').addEventListener('input',()=>{
 
 const AP_PHASES=[
  {id:"baseline",name:"Baseline",type:"Independent test",info:"12 possible pitch classes, mixed octaves and timbres. No references, replays, or feedback."},
- {id:"study",name:"Listen",type:"First encounters",info:"Hear each named pitch in octaves 3, 4 and 5. Listen for its distinctive quality, not intervals."},
+ {id:"study",name:"Listen",type:"First encounters",info:"Hear each named pitch in every selected octave. Listen for its distinctive quality, not intervals."},
  {id:"detect",name:"Detect",type:"Target-note detection",info:"Decide whether the sound belongs to the named target. Near-neighbor foils are included."},
- {id:"detect-octaves",name:"Detect Octaves",type:"Target detection across octaves",info:"Choose Yes when the tone has the named pitch class, regardless of octave. Both targets and near-neighbor distractors span three octaves."},
+ {id:"detect-octaves",name:"Detect Octaves",type:"Target detection across octaves",info:"Choose Yes when the tone has the named pitch class, regardless of octave. Both targets and near-neighbor distractors use the selected octave range."},
  {id:"identify",name:"Identify",type:"Isolated note identification",info:"Identify a pitch class in the fourth octave, or choose Other for pitches not yet learned."},
  {id:"octaves",name:"Octaves",type:"Octave generalization",info:"The same pitch class now occurs in different octaves. The octave number does not affect the correct response."},
  {id:"transfer",name:"Timbres",type:"Instrument and timbre transfer",info:"Identify pitches through changing waveforms and, when loaded, your SoundFont. Some notes remain outside the learning set."},
@@ -1646,8 +1647,21 @@ function apRenderJumpSetup(){apRenderJumpChoices("apJumpSetup");}
 $("apIncludeBaseline").addEventListener("change",apRenderJumpSetup);
 $("apIncludeFinal").addEventListener("change",apRenderJumpSetup);
 function apRandom(a){return a[Math.floor(Math.random()*a.length)]}
+for(const [id,initial,other] of [["apLow",3,"apHigh"],["apHigh",5,"apLow"]]){
+ const select=$(id);
+ for(let octave=1;octave<=7;octave++)select.add(new Option(String(octave),String(octave)));
+ select.value=String(initial);
+ select.onchange=()=>{
+  if(Number($("apLow").value)>Number($("apHigh").value))$(other).value=select.value;
+ };
+}
+function apOctaves(){
+ const low=Number($("apLow").value),high=Number($("apHigh").value);
+ return Array.from({length:high-low+1},(_,i)=>low+i);
+}
+function apFixedOctave(){return Math.max(Number($("apLow").value),Math.min(4,Number($("apHigh").value)))}
 function apPitch(pc,wide){
- const octave=wide?apRandom([3,4,5]):4;
+ const octave=wide?apRandom(apOctaves()):apFixedOctave();
  return 12*(octave+1)+pc;
 }
 function apTimbre(varied){
@@ -1776,7 +1790,7 @@ function apMakePhase(id){
  const quick=$("apLength").value==="quick",count=apFocus.size;
  switch(id){
   case "baseline": case "final": return apTestItems(quick?12:24);
-  case "study": return apPcs().flatMap(pc=>shuffle([48,60,72]).map(base=>({pc,midi:base+pc,expected:null,timbre:null})));
+  case "study": return apPcs().flatMap(pc=>shuffle(apOctaves()).map(octave=>({pc,midi:12*(octave+1)+pc,expected:null,timbre:null})));
   case "detect": case "detect-octaves":{
    const wide=id==="detect-octaves";
    const baseN=quick?Math.max(12,count*4):Math.max(24,count*6),pcs=apPcs();
@@ -1784,15 +1798,15 @@ function apMakePhase(id){
    const foilUsage=new Map();
    return apSpread(pcs.flatMap(target=>{
     // In Detect Octaves, each Yes/No pair occupies the same register;
-    // successive pairs rotate through C3–B3, C4–B4, and C5–B5.
+    // successive pairs rotate through the selected registers.
     // Thus answer polarity cannot be inferred from a note's octave.
-    const octaveOffset=wide?Math.floor(Math.random()*3):0;
+    const octaves=apOctaves(),octaveOffset=Math.floor(Math.random()*octaves.length);
     return Array.from({length:perTarget},(_,i)=>{
      // With only one practiced note, use more varied negatives. Exactly
      // 50/50 would make a no-repeat sequence alternate Yes/No predictably.
      const same=pcs.length===1?(i%5<2):i%2===0;
      const p=same?target:apDetectionFoil(target,foilUsage);
-     const octave=wide?3+(octaveOffset+Math.floor(i/2))%3:4;
+     const octave=wide?octaves[(octaveOffset+Math.floor(i/2))%octaves.length]:apFixedOctave();
      return {pc:p,targetPc:target,midi:12*(octave+1)+p,expected:same?"yes":"no",timbre:null};
     });
    }));
