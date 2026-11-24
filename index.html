@@ -146,7 +146,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
 #apReplay{position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-radius:50%;width:38px;height:38px;min-height:0;padding:0}
 #apKeys{display:block;width:65%;height:38px;margin:5px auto}
 #apKeys rect{fill:#e4e9ef;stroke:#455161;stroke-width:.65}
-#apKeys .black{fill:#17202d;stroke:#0c131c}
+#apKeys .ap-black-key{fill:#17202d;stroke:#0c131c}
 #apKeys .marked{fill:var(--pitch);stroke:#fff;stroke-width:1}
 #s-ap-practice .ap-feedback{min-height:20px;text-align:center;padding:0;font-size:12px}
 #s-ap-practice summary{padding:4px;color:var(--muted);cursor:pointer}
@@ -1865,7 +1865,7 @@ function apRenderChoices(answer){
  const keys=$("apKeys");keys.replaceChildren();
  function drawKey(pc,x,width,height,black){
   const key=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  for(const [name,value] of Object.entries({x,y:0,width,height,rx:1,class:(black?"black ":"")+(shownPc===pc?"marked":"")}))key.setAttribute(name,value);
+  for(const [name,value] of Object.entries({x,y:0,width,height,rx:1,class:(black?"ap-black-key ":"")+(shownPc===pc?"marked":"")}))key.setAttribute(name,value);
   key.style.setProperty("--pitch",apColors[pc]);keys.append(key);
  }
  [0,2,4,5,7,9,11].forEach((pc,i)=>drawKey(pc,i*20,20,40,false));
