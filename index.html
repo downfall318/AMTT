@@ -144,13 +144,14 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
 .ap-wheels svg{display:block;width:100%;overflow:visible}.ap-wheels text{pointer-events:none;font:bold 6px system-ui;fill:white;text-anchor:middle;dominant-baseline:central}
 .ap-wheels [role=button]{cursor:pointer}.ap-wheels [role=button]:focus-visible{outline:none;stroke:white;stroke-width:1.5}
 #apReplay{position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-radius:50%;width:38px;height:38px;min-height:0;padding:0}
-#apKeys{display:block;width:65%;height:38px;margin:5px auto}
+#apKeys{display:block;width:min(95%,300px);height:46px;margin:5px auto}
+#apKeys [role="button"]{cursor:pointer;touch-action:manipulation}#apKeys [role="button"]:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
 #apKeys rect{fill:#e4e9ef;stroke:#455161;stroke-width:.65}
 #apKeys .ap-black-key{fill:#17202d;stroke:#0c131c}
 #apKeys .marked{fill:var(--pitch);stroke:#fff;stroke-width:1}
 #s-ap-practice .ap-feedback{min-height:20px;text-align:center;padding:0;font-size:12px}
 #s-ap-practice summary{padding:4px;color:var(--muted);cursor:pointer}
-@media(max-height:400px){.ap-wheels{width:min(100%,70dvh)}#apKeys{height:25px}#s-ap-practice .ap-bar{margin:0}}
+@media(max-height:400px){.ap-wheels{width:min(100%,70dvh)}#apKeys{height:36px}#s-ap-practice .ap-bar{margin:0}}
 .accidental-menu label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;min-height:32px}.accidental-menu{gap:6px}
 @media(orientation:landscape) and (max-height:620px){
  main:has(#s-ap-practice.active){margin:2px auto;width:calc(100% - 12px)}
@@ -158,7 +159,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
  #s-ap-practice .ap-bar{grid-area:bar;margin:0}
  #s-ap-practice .ap-progress{grid-area:progress;margin:1px 0}
  #s-ap-practice .ap-wheels{grid-area:wheels;width:min(100%, max(165px,calc(200dvh - 178px)))}
- #apKeys{grid-area:keys;height:24px;margin:1px auto}
+ #apKeys{grid-area:keys;height:36px;margin:1px auto}
  #apQuestionPrompt{grid-area:prompt}#apFeedback{grid-area:feedback}
  #s-ap-practice .ap-next-row{grid-area:actions}
  #s-ap-practice details{grid-area:settings;align-self:start;min-width:0;margin:0}
@@ -246,7 +247,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
   <div><small>Answer</small><svg id="apAnswerButtons" viewBox="-50 -50 100 100" aria-label="Pitch input"></svg></div>
   <button id="apReplay" aria-label="Replay tone" title="Play tone">▶</button>
  </div>
- <svg id="apKeys" viewBox="0 0 140 40" preserveAspectRatio="none" role="img" aria-label="Pitch feedback keyboard"></svg>
+ <svg id="apKeys" viewBox="0 0 140 40" preserveAspectRatio="none" role="group" aria-label="Piano answers and pitch feedback"></svg>
  <div id="apFeedback" role="status" aria-live="polite" class="ap-feedback"></div>
  <div class="row ap-next-row"><button id="apSkip">Skip</button><button id="apNext" class="primary">Next →</button></div>
  <details><summary>Session controls</summary>
@@ -1830,18 +1831,18 @@ function apRenderChoices(answer){
  $("apWheelCaption").textContent=previous?"Previous feedback":apAnswered&&!apTestPhase()?"Feedback":"Question";
  const prompt=study?noteName(q.midi):detect?apName(q.targetPc)+"?":"?";
  const point=(r,a)=>[r*Math.sin(a),-r*Math.cos(a)];
+  function bind(g,val,label){
+   if(study||apAnswered)return;
+   for(const [k,v] of Object.entries({role:"button",tabindex:0,"aria-label":label}))g.setAttribute(k,v);
+   g.onclick=()=>apSubmit(val);
+   g.onkeydown=e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();apSubmit(val)}};
+  }
  for(const input of [true,false]){
   const root=$(input?"apAnswerButtons":"apResultWheel");root.replaceChildren();
   function add(tag,attrs,parent=root){
    const el=document.createElementNS("http://www.w3.org/2000/svg",tag);
    for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);
    parent.append(el);return el;
-  }
-  function bind(g,val,label){
-   if(!input||study||apAnswered)return;
-   for(const [k,v] of Object.entries({role:"button",tabindex:0,"aria-label":label}))g.setAttribute(k,v);
-   g.onclick=()=>apSubmit(val);
-   g.onkeydown=e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();apSubmit(val)}};
   }
   for(let pc=0;pc<12;pc++){
    const a=(Number($("apOrigin").value)+pc*Number($("apDirection").value))*Math.PI/6,edge=Math.PI/12;
@@ -1853,7 +1854,7 @@ function apRenderChoices(answer){
    const [x,y]=point(37,a);
    add("circle",{cx:x,cy:y,r:6.8,fill:marked?color:"#1a2330",stroke:marked?"white":color,"stroke-width":marked?1.8:.7},g);
    add("text",{x,y},g).textContent=apName(pc);
-   if(enabled)bind(g,val,apName(pc));
+   if(input&&enabled)bind(g,val,apName(pc));
   }
   const g=add("g",{}),outside=detect?"no":"other";
   const centerActive=input?answer===outside:feedback?.expected===outside;
@@ -1866,6 +1867,11 @@ function apRenderChoices(answer){
  function drawKey(pc,x,width,height,black){
   const key=document.createElementNS("http://www.w3.org/2000/svg","rect");
   for(const [name,value] of Object.entries({x,y:0,width,height,rx:1,class:(black?"ap-black-key ":"")+(shownPc===pc?"marked":"")}))key.setAttribute(name,value);
+  let response=pc;
+  if(detect)response=pc===q.targetPc?"yes":"no";
+  else if(!apTestPhase()&&!apFocus.has(pc))response="other";
+  const label=typeof response==="number"?apName(pc):apName(pc)+", "+apResponseLabel(response);
+  bind(key,response,label);
   key.style.setProperty("--pitch",apColors[pc]);keys.append(key);
  }
  [0,2,4,5,7,9,11].forEach((pc,i)=>drawKey(pc,i*20,20,40,false));
