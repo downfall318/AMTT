@@ -368,7 +368,7 @@ header button{min-height:34px}
 <!-- 7: quiz types -->
 <section class="screen" id="s-quiztypes">
  <div class="step">Setup</div><h1>How do you want to be quizzed?</h1>
- <div class="panel"><label class="choice"><input type="checkbox" id="singleNotes"><span><b>Single notes only</b><small>Practice one pitch per question, including ear training and review.</small></span></label><div class="grid" id="quizOptions">
+ <div class="panel"><label class="choice"><input type="checkbox" id="singleNotes"><span><b>Single notes only</b><small>Practice one pitch per question, including ear training and review.</small></span></label><label class="choice"><input type="checkbox" id="singleEarNotes"><span><b>Single-note listening + chord playing</b><small>Listen and transcribe one pitch at a time. Read and play intervals and chords from staff notation or symbols such as Csus2.</small></span></label><div class="grid" id="quizOptions">
   <label class="choice"><input type="checkbox" value="play-sheet" checked><span><b>Play the sheet music</b><small>Read staff notation and perform it</small></span></label>
   <label class="choice"><input type="checkbox" value="play-notation" checked><span><b>Play intervals &amp; chords</b><small>Play named intervals (minor/major seconds, thirds, etc.) and chord symbols such as Csus2</small></span></label>
   <label class="choice"><input type="checkbox" value="play-ear" checked><span><b>Play by ear</b><small>Listen to a short group of up to three questions, then play the notes</small></span></label>
@@ -654,13 +654,17 @@ document.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>{let dest=b.da
 document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back.slice(2)));
 // Only the GUI's DOM order controls exercise sequencing, never selection timing.
 const exerciseOrder=[...document.querySelectorAll('#quizOptions input')].map(x=>x.value);
-function updateNoteMode(){
+function updateNoteMode(event){
+ if(event?.target.checked){
+  if(event.target.id==="singleNotes")$("singleEarNotes").checked=false;
+  else $("singleNotes").checked=false;
+ }
  for(const input of document.querySelectorAll('#quizOptions input[value$="-notation"]')){
-  input.disabled=$("singleNotes").checked;
+  input.disabled=$("singleNotes").checked||($("singleEarNotes").checked&&input.value==="to-notation");
   input.closest("label").hidden=input.disabled;
  }
 }
-$("singleNotes").onchange=updateNoteMode;
+$("singleNotes").onchange=$("singleEarNotes").onchange=updateNoteMode;
 updateNoteMode();
 function chosenTypes(){const checked=new Set([...document.querySelectorAll('#quizOptions input:checked:enabled')].map(x=>x.value));return exerciseOrder.filter(type=>checked.has(type))}
 function roots(){return [...new Set([...pool,...intro])].sort((a,b)=>a-b)}
@@ -672,7 +676,7 @@ const setups=new Map(),timers=[];
 let history=[],completed=new Set();
 function syncSetup(){
  const ordered=set=>[...set].sort((a,b)=>a-b);
- const key=JSON.stringify([mode,ordered(intro),ordered(pool),chosenTypes().sort(),$("singleNotes").checked,$("lockCMajor").checked]);
+ const key=JSON.stringify([mode,ordered(intro),ordered(pool),chosenTypes().sort(),$("singleNotes").checked,$("singleEarNotes").checked,$("lockCMajor").checked]);
  if(!setups.has(key))setups.set(key,{history:[],completed:new Set()});
  ({history,completed}=setups.get(key));
  for(const [s,id] of Object.entries(stages)){
@@ -888,6 +892,8 @@ function beginRevealReinforcement(){
 // contiguous section. If it cannot run, do not silently jump to another type.
 function exerciseCandidates(items,type){
  // Symbol exercises assess harmonic relationships, not isolated note names.
+ if($("singleEarNotes").checked&&["play-ear","to-sheet","to-note"].includes(type))
+  items=items.filter(q=>q.kind==="note");
  const symbolExercise=type==="play-notation"||type==="to-notation";
  const candidates=items.filter(q=>symbolExercise?["interval","chord"].includes(q.kind):type==="to-note"?["note","chord"].includes(q.kind):true);
  return ($("shuffle").checked?shuffle(candidates):candidates).map(q=>({...q,type,symbol:type==="play-notation"&&q.kind==="chord"?N[pc(q.root)]+q.suffix:q.symbol}));
@@ -1103,7 +1109,7 @@ function playbackEnd(){
  return end;
 }
 function singleEarPage(){
- return $("singleNotes").checked && stage!=="REVEAL" && questions[qi]?.type==="play-ear";
+ return ($("singleNotes").checked||$("singleEarNotes").checked) && stage!=="REVEAL" && questions[qi]?.type==="play-ear";
 }
 function stopEarPromptOnInput(){
  if(singleEarPage() && earEnd>qi)stopAudio();
