@@ -50,7 +50,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 .practice-bar,.input-bar{display:flex;align-items:center;gap:8px}.practice-bar{padding:5px 0}.practice-bar strong{margin-right:auto}.practice-bar #qCount{white-space:nowrap;color:var(--muted)}#openOptions{font:24px/1 system-ui;padding:5px 10px}.input-bar #tapControls{margin-left:auto}.input-bar #inputNoteNames{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.playback-options{margin:12px 0}.playback-options label select{margin-left:5px}#practiceOptions{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;width:min(390px,94vw);max-height:88dvh;overflow:auto}#practiceOptions::backdrop{background:#0009}#practiceOptions h2{margin:0}#practiceOptions #guideText{max-height:32vh;overflow:auto}.practice-work #feedback{font-size:12px;margin:2px 0;padding:2px 5px;min-height:0}.practice-work #questionHelp:empty,.practice-work #timeline:empty,.practice-work #questionAnswers:empty{display:none}
 @media (orientation:landscape) and (max-height:620px){
  body:has(#s-practice.active){overflow:hidden;padding:0}
- body:has(#s-practice.active) header,main:has(#s-practice.active)>.progress{display:none}
+ main:has(#s-practice.active)>.progress{display:none}
  main:has(#s-practice.active){width:100%;max-width:none;margin:0}
  #s-practice.active{box-sizing:border-box;height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr);padding:2px max(6px,env(safe-area-inset-right)) max(2px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
  .practice-bar{padding:0 0 3px;font-size:14px}.practice-bar button,.input-bar button,.input-bar select{min-height:34px;padding:4px 9px}
@@ -136,7 +136,7 @@ main{max-width:1000px}.split{grid-template-columns:minmax(0,1fr)}.piano .white{w
 .ap-volume-control .ap-volume-head{display:flex;justify-content:space-between;gap:8px}
 .ap-volume-control input[type="range"]{display:block;width:100%;margin:6px 0;accent-color:var(--blue);min-height:22px}
 
-body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress{display:none}
+main:has(#s-ap-practice.active)>.progress{display:none}
 #s-ap-practice{max-width:420px;margin:auto}
 #s-ap-practice .ap-prompt{font-size:20px;min-height:0;text-align:center;margin:3px}
 .ap-wheels{position:relative;display:flex;margin:auto;width:min(100%,max(215px,76dvh));text-align:center}
@@ -164,10 +164,27 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
  #s-ap-practice .ap-next-row{grid-area:actions}
  #s-ap-practice details{grid-area:settings;align-self:start;min-width:0;margin:0}
 }
+#s-interval-setup .grid,#ivAnswers,#studyIntervals{grid-template-columns:repeat(auto-fit,minmax(min(100%,9.5rem),1fr))}
+#s-interval-setup .choice select{width:100%;max-width:100%;min-width:0}
+#s-interval-setup .choice:has(select){display:grid;align-content:start}
+#s-interval-setup fieldset,#s-interval-run .panel{min-width:0}
+#ivAnswers button,#ivTargets label{min-width:0;white-space:normal;overflow-wrap:anywhere}
+#s-interval-run .screen-actions,#s-interval-setup .screen-actions{flex-wrap:wrap}
+#studyIntervals [aria-pressed=true]{background:#15518a}
+#ivPianoDialog{width:min(760px,94vw);max-width:94vw;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px}
+#ivPianoDialog::backdrop{background:#0009}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;height:44px;padding-block:3px}
+header button{min-height:34px}
+@media (orientation:landscape) and (max-height:620px){#s-practice.active{height:calc(100vh - 44px);height:calc(100dvh - 44px)}}
+#ivAnswers button[data-result]{opacity:1}
+#ivAnswers [data-result="correct"]{background:#184630;border-color:#68c58f;color:#dbffea}
+#ivAnswers [data-result="wrong"]{background:#582a32;border-color:#e98a96;color:#ffe5e9}
+#ivFeedback[data-result="correct"]{color:#9de3b9}
+#ivFeedback[data-result="wrong"]{color:#ffb4bf}
 </style>
 </head>
 <body>
-<header><div class="brand">Music Theory Trainer</div><div class="sub">Self-contained · Touch, keyboard and MIDI · No accounts or profiles</div></header>
+<header><div class="brand">Music Theory Trainer</div><div class="sub">Self-contained · Touch, keyboard and MIDI · No accounts or profiles</div><button id="ivOpenPiano" aria-haspopup="dialog" aria-controls="ivPianoDialog">Piano</button></header>
 <main>
 <div class="progress"><i id="progressBar"></i></div>
 
@@ -191,12 +208,43 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
   <label class="choice"><input type="radio" name="mode" value="touch" checked><span><b>Touch</b><small>Tap an on-screen piano</small></span></label>
   <label class="choice"><input type="radio" name="mode" value="keyboard"><span><b>Keyboard</b><small>Use computer keycaps</small></span></label>
   <label class="choice"><input type="radio" name="mode" value="midi"><span><b>MIDI</b><small>Use an external MIDI device</small></span></label>
+  <label class="choice"><input type="radio" name="mode" value="interval"><span><b>Interval Training</b><small>Hear two notes and identify the interval.</small></span></label>
   <label class="choice ap-mode-option"><input type="radio" name="mode" value="absolute"><span><b>Absolute Pitch Training</b><small>Ear-training exercises with on-screen answers. No keyboard or MIDI input required.</small></span></label>
  </div>
  <p class="tiny">Touch, Keyboard, and MIDI open the regular music-theory trainer. Absolute Pitch Training opens a separate listening curriculum with selectable exercises and optional independent tests.</p>
  <div class="screen-actions"><button data-back="s-sound">Instrument sound</button><button class="primary" id="modeContinue">Continue</button></div>
 </section>
 
+<section class="screen" id="s-interval-setup">
+ <div class="step">Ear training</div><h1>Interval training</h1>
+ <div class="panel grid">
+  <label class="choice">Tonic <select id="ivTonic"><option value="random">Random each question</option></select></label>
+  <label class="choice">Playback <select id="ivStyle"><option value="melodic">Ascending pair</option><option value="chord">Together as a chord</option></select></label>
+  <label class="choice">Lowest tonic octave <select id="ivLow"></select></label>
+  <label class="choice">Highest tonic octave <select id="ivHigh"></select></label>
+ </div><fieldset class="panel"><legend>Quiz intervals</legend><div class="grid" id="ivTargets"></div><p class="tiny" id="ivHint" aria-live="polite"></p></fieldset><p class="tiny">The second note rises by 1–12 semitones and can fall above the tonic octave range.</p>
+ <div class="screen-actions"><button data-back="s-mode">Modes</button><button id="ivIntro">Introduction</button><button class="primary" id="ivStart">Start practice</button></div>
+</section>
+<section class="screen" id="s-interval-run">
+ <div class="row between"><div class="step" id="ivScore"></div></div>
+<h1 id="ivTitle">Which interval did you hear?</h1>
+ <div class="panel"><button id="ivReplay">Replay pair</button><div class="grid" id="ivAnswers" style="margin-top:12px"></div><p aria-live="polite" id="ivFeedback"></p></div>
+ <div class="screen-actions"><button id="ivSettings">Settings</button><button class="primary" id="ivNext" disabled>Next pair</button></div>
+</section>
+<section class="screen" id="s-interval-study">
+ <div class="row between"><h1>Interval introduction</h1></div>
+ <div class="panel row">
+ <label>Tonic <select id="studyTonic"></select></label><button id="studyRandom">Random tonic</button>
+ <label>Octave <select id="studyOctave"></select></label>
+ <label>Playback <select id="studyStyle"><option value="melodic">Ascending pair</option><option value="chord">Together as a chord</option></select></label></div>
+ <div class="panel"><h2 id="studyTitle"></h2><div id="studyDiagram"></div><p id="studyNotes"></p><button id="studyReplay">Replay interval</button></div>
+ <div id="studyIntervals" class="grid"></div>
+ <div class="screen-actions"><button id="studyBack">Quiz settings</button><button id="ivQuiz" class="primary">Start quiz</button></div>
+</section>
+ <dialog id="ivPianoDialog" aria-labelledby="ivPianoTitle">
+  <div class="row between"><h2 id="ivPianoTitle">Reference piano</h2><button id="ivClosePiano" autofocus>Close</button></div>
+  <div class="piano-scroll"><div class="piano piano-picker" id="ivPianoKeys"></div></div>
+ </dialog>
 <!-- 3: MIDI -->
 <section class="screen" id="s-midi">
  <div class="step">Setup</div><h1>Select MIDI device</h1>
@@ -219,6 +267,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
    <div class="row" role="group" aria-label="Octave range"><label>Lowest octave <select id="apLow"></select></label><label>Highest octave <select id="apHigh"></select></label></div>
    <div class="row"><label>C position <select id="apOrigin"><option value="0">12 o’clock</option><option value="1">1 o’clock</option><option value="2">2 o’clock</option><option value="3">3 o’clock</option><option value="4">4 o’clock</option><option value="5">5 o’clock</option><option value="6">6 o’clock</option><option value="7">7 o’clock</option><option value="8">8 o’clock</option><option value="9">9 o’clock</option><option value="10">10 o’clock</option><option value="11">11 o’clock</option></select></label><label>Wheel direction <select id="apDirection"><option value="1">Clockwise (CW)</option><option value="-1">Counterclockwise (CCW)</option></select></label></div>
    <label>Session length <select id="apLength"><option value="standard" selected>Full · deeper practice</option><option value="quick">Short · fewer trials</option></select></label>
+   <label class="choice"><input id="apDistractors" type="checkbox" checked><span>Include out-of-set distractors<small>Training only. With this off, practice uses only your selected pitches.</small></span></label>
    <label class="choice"><input id="apAutoplay" type="checkbox" checked><span>Automatically play each new tone</span></label>
   </div>
   <fieldset class="ap-test-options">
@@ -341,7 +390,7 @@ body:has(#s-ap-practice.active) header,main:has(#s-ap-practice.active)>.progress
   <button id="introBtn">Introduction · Guided learning</button>
   <button id="utilBtn">Utilization · Mixed practice</button>
   <button id="weakBtn">Weaknesses · Targeted practice</button>
- </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews each item in eight shuffled rounds. Utilization mixes familiar and newly introduced material across the full note pool. The question total grows before Reveal ends. Guided Introduction shortens sections when only a few distinct targets are available. Completion indicators last only for this session.</p></div>
+ </div><p id="exerciseWarning" class="status bad" role="alert" hidden></p><p class="tiny">Reveal is a separate note-first introduction and review phase. Introduction, Utilization, and Weaknesses use the fixed exercise order. Reveal introduces each note, interval, and chord three times in a row, then reviews up to 12 distinct items in one shuffled round. Utilization mixes familiar and newly introduced material across the full note pool. The question total grows before Reveal ends. Guided Introduction shortens sections when only a few distinct targets are available. Completion indicators last only for this session.</p></div>
  <div class="screen-actions"><button data-back="s-quiztypes">Back</button><button class="secondary" data-next="s-intro">Edit note introduction</button></div>
 </section>
 
@@ -430,6 +479,20 @@ function tone(m,d=.7,delay=0,baseTime,lessonPlayback=false,velocity=NOTE_VELOCIT
  if(soundfont&&!timbreOverride&&sampleTone(m,d,t,output,velocity,liveKey))return;
  let o=audio.createOscillator(),g=audio.createGain();o.type=timbreOverride||"triangle";o.frequency.value=440*Math.pow(2,(m-69)/12);
  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.65*VELOCITY_GAIN,t+.015);
+ if($("s-practice").classList.contains("active")){
+  const sustain=.24*VELOCITY_GAIN,holdUntil=t+Math.max(.045,d-.12);
+  g.gain.exponentialRampToValueAtTime(sustain,t+.04);
+  g.gain.setValueAtTime(sustain,holdUntil);
+  if(liveKey!==null){
+   liveSamples.set(liveKey,time=>{
+    const end=Math.max(time,holdUntil);
+    g.gain.setValueAtTime(sustain,end);
+    g.gain.exponentialRampToValueAtTime(.0001,end+.12);
+    o.stop(end+.14);
+   });
+   o.connect(g);g.connect(output);o.start(t);return;
+  }
+ }
  g.gain.exponentialRampToValueAtTime(.0001,t+d);
  o.connect(g);g.connect(output);o.start(t);o.stop(t+d+.03);
 }
@@ -578,6 +641,7 @@ document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("c
 $("keyBack").onclick=()=>show(mode==="midi"?"midi":"mode");
 $("modeContinue").onclick=()=>{
  mode=document.querySelector('input[name="mode"]:checked').value;
+ if(mode==="interval"){show("interval-setup");return;}
  if(mode==="absolute"){apDrawSelector();apRenderJumpSetup();show("ap-setup");return;}
  renderNoteChecks("introNotes",intro);renderNoteChecks("poolNotes",pool);$("allNotes").hidden=false;
  if(mode==="midi"){show("midi");scanMidi()}else show("key");
@@ -754,7 +818,7 @@ function initReveal(){
  rebuildRevealPages();
 }
 
-const revealReviewRounds=8;
+const revealReviewLimit=12;
 function revealExposures(q,phase){
  return Array.from({length:3},(_,i)=>({...revealQuestion(q,phase),exposure:i+1}));
 }
@@ -810,15 +874,10 @@ function beginRevealReinforcement(){
  const state=revealState;
  if(!state||state.phase!=="introducing")return;
  state.phase="reinforcement";
- // A separate, clearly labelled phase; both notes and chords are randomized.
- const tasks=[];
- for(let round=0;round<revealReviewRounds;round++){
-  const batch=shuffle(state.pendingReviews);
-  const previous=tasks.at(-1)||questions.at(-1);
-  if(batch.length>1&&revealId(batch[0])===revealId(previous))
-   [batch[0],batch[1]]=[batch[1],batch[0]];
-  tasks.push(...batch.map(item=>({...item})));
- }
+ const tasks=shuffle(state.pendingReviews);
+ if(tasks.length>1&&revealId(tasks[0])===revealId(questions.at(-1)))
+  [tasks[0],tasks[1]]=[tasks[1],tasks[0]];
+ tasks.splice(revealReviewLimit);
  state.pendingReviews=[];
  questions=questions.concat(tasks);
  state.additions+=tasks.length;
@@ -1032,8 +1091,8 @@ function staffHeads(notes,cx,ctx){
   if(d!==ctx.alter[pos%7])ink+='<text x="'+(cx-17-(pos%2)*8)+'" y="'+(h+4)+'">'+accidental(d)+'</text>';
  }return ink;
 }
-function staff(notes){
- const ctx=pageStaff(),ys=notes.map(n=>staffY(spelling(n,ctx).pos));
+function staff(notes,ctx=pageStaff()){
+ const ys=notes.map(n=>staffY(spelling(n,ctx).pos));
  const top=Math.min(staffY(ctx.anchors[0]+8)-16,...ys.map(y=>y-12)),bottom=Math.max(staffY(ctx.anchors.at(-1))+28,...ys.map(y=>y+12));
  return '<svg class="staff" role="img" aria-label="'+ctx.name+' major staff" viewBox="0 '+top+' 185 '+(bottom-top)+'" fill="currentColor">'+staffLines(ctx,185)+staffSigns(ctx,staffY,Math.min(ctx.anchors.at(-1),...ys.map(y=>30+(64-y)/5)),Math.max(ctx.anchors[0]+8,...ys.map(y=>30+(64-y)/5)))+staffHeads(notes,135,ctx)+'</svg>';
 }
@@ -1063,7 +1122,7 @@ function playCurrent(single=false){
  if(!groups.length)return;
  const beat=+$("beat").value,box=$("timeline");box.innerHTML=groups.map((_,i)=>'<span>'+(qi+i+1)+'</span>').join("")+'<i></i>';
  ctx();const start=audio.currentTime;
- groups.forEach((ns,i)=>ns.forEach(n=>tone(n,beat*.00062,i*beat/1000,start,true)));
+ groups.forEach((ns,i)=>ns.forEach(n=>tone(n,groups.length===1?Math.max(PRACTICE_DURATION,beat*.00088):beat*.00088,i*beat/1000,start,true)));
  const begin=performance.now(),line=box.lastChild;
  function tick(){const t=Math.min(1,(performance.now()-begin)/(groups.length*beat));line.style.left='calc('+t*100+'% - 1px)';if(t<1)animation=requestAnimationFrame(tick)}tick();
 }
@@ -1166,7 +1225,7 @@ function showQuestion(){
  }
  selected=new Set(held.values());paintPiano();drawLine();renderLastOutcome();
  $("inputNoteNames").textContent="No notes entered";$("questionAnswers").replaceChildren();if(!continuing)$("timeline").replaceChildren();
- $("qCount").textContent=review?"Encounter "+(qi+1)+" / "+(questions.length+revealReviewRounds*revealState.pendingReviews.length)+" · "+(q.revealPhase.includes("reinforce")?"reinforcement":"introducing"):(qi+1)+" / "+questions.length;$("exerciseLabel").textContent=review?(q.revealPhase.includes("reinforce")?"Reveal · Reinforcement":"Reveal · First encounter"):titles[q.type];
+ $("qCount").textContent=review?"Encounter "+(qi+1)+" / "+(questions.length+Math.min(revealReviewLimit,revealState.pendingReviews.length))+" · "+(q.revealPhase.includes("reinforce")?"reinforcement":"introducing"):(qi+1)+" / "+questions.length;$("exerciseLabel").textContent=review?(q.revealPhase.includes("reinforce")?"Reveal · Reinforcement":"Reveal · First encounter"):titles[q.type];
  $("inputModeLabel").textContent=mode.toUpperCase();$("nextQuestion").disabled=!review;$("feedback").className="status";$("feedback").textContent=review?"Review and continue.":"Hold the target notes together.";
  $("guide").hidden=q.type!=="to-notation";$("guide").open=false;
  $("guideText").textContent="Intervals: "+intervals.slice(1).map((name,i)=>name+" ("+(i+1)+" semitones)").join(" · ")+" | Chords: "+chordDefs.map(([suffix,name,ints])=>(suffix||"Major")+" · "+name+" · "+ints.join("–")).join(" | ");
@@ -1394,7 +1453,7 @@ function skipQuestionWrong(){
  done=true;
  advance(null,true);
 }
-function activePractice(){return !$("practiceOptions").open&&$("s-practice").classList.contains("active")&&qi<questions.length}
+function activePractice(){return !$("ivPianoDialog").open&&!$("practiceOptions").open&&$("s-practice").classList.contains("active")&&qi<questions.length}
 function updateHeld(){
  selected=new Set(held.values());paintPiano();
  $("inputNoteNames").textContent=[...selected].sort((a,b)=>a-b).map(noteName).join(" · ")||"Ready";
@@ -1413,6 +1472,11 @@ function enter(n,source="api:"+n,velocity=NOTE_VELOCITY){
  // immediately advances and auto-plays the next note. Playing this key
  // afterwards would layer the previous note over that next prompt.
  tone(n,PRACTICE_DURATION,0,undefined,false,velocity,source);
+ // One overlapping keyboard gesture is one answer, committed on final key-up.
+ if(mode==="keyboard"){
+  peak=[...new Set([...peak,n])].sort((a,b)=>a-b);
+  return;
+ }
  if(ns.length>=peak.length)peak=ns;
  matchHeld(ns);
 }
@@ -1428,9 +1492,9 @@ function release(source){
  releaseSamples(source);
  if(!held.delete(source))return;
  const ns=updateHeld();if(!activePractice())return;
- if(ns.length){matchHeld(ns);return}
+ if(ns.length){if(mode!=="keyboard")matchHeld(ns);return}
  if(fresh&&peak.length){
-  if(stage==="REVEAL"||["play-sheet","play-ear","play-notation"].includes(questions[qi].type))submit(peak);
+  if(mode==="keyboard"||stage==="REVEAL"||["play-sheet","play-ear","play-notation"].includes(questions[qi].type))submit(peak);
   else{$("feedback").textContent="Try that target again."}
  }
  fresh=false;peak=[]
@@ -1480,6 +1544,7 @@ function renderPiano(){const base=currentPageBase();
  }
  $("keyLegend").textContent=mode==="keyboard"?"Q–U lower · Z–M upper · Use the labeled keys between neighboring white keys for accidentals · A also plays the note just below Z · Each black key is the sharp of its left neighbor and the flat of its right neighbor.":"Tap keys to enter notes.";paintPiano()}
 window.addEventListener("keydown",e=>{
+ if($("ivPianoDialog").open)return;
  if(e.code==="F1"&&activePractice()){
   e.preventDefault();
   if(!e.repeat&&!e.shiftKey&&!e.altKey&&!e.ctrlKey&&!e.metaKey)skipQuestionWrong();
@@ -1632,6 +1697,7 @@ function apDrawSelector(){
   apFocus.size+" pitch class"+(apFocus.size===1?"":"es")+": "+apPcs().map(apName).join(" · ")+" · Out of bounds: "+(apAllFoils().map(apName).join(" · ")||"none"):
   "Choose at least one note to begin.";
 }
+$("apDistractors").onchange=apDrawSelector;
 function apRenderJumpChoices(id){
  const root=$(id);root.replaceChildren();
  for(const phase of AP_PHASES){
@@ -1736,6 +1802,7 @@ function apTestItems(size){
  }));
 }
 function apAllFoils(){
+ if(!$("apDistractors").checked)return [];
  // Apply the study's two edge tones to each contiguous selected run.
  // Modular pitch classes keep B and C adjacent across the octave seam.
  const outside=new Set();
@@ -1783,7 +1850,7 @@ function apMakePhase(id){
     // Thus answer polarity cannot be inferred from a note's octave.
     const octaves=apOctaves(),octaveOffset=Math.floor(Math.random()*octaves.length);
     return Array.from({length:perTarget},(_,i)=>{
-     const same=i%2===0;
+     const same=i%2===0||(!outside.length&&pcs.length===1);
      const p=same?target:apBalancedFoil(outside.length?outside:pcs.filter(pc=>pc!==target),foilUsage);
      const octave=wide?octaves[(octaveOffset+Math.floor(i/2))%octaves.length]:apFixedOctave();
      return {pc:p,targetPc:target,midi:12*(octave+1)+p,expected:same?"yes":"no",timbre:null};
@@ -1837,7 +1904,7 @@ function apRenderChoices(answer){
   const g=add("g",{}),outside=detect?"no":"other";
   const centerActive=input?answer===outside:feedback?.expected===outside;
   add("circle",{r:16,fill:centerActive?"#475e75":"#182231",stroke:centerActive?"white":"#556477"},g);
-  const allow=detect||(!apTestPhase()&&apFocus.size<12&&!study);
+  const allow=detect||(!apTestPhase()&&$("apDistractors").checked&&apFocus.size<12&&!study);
   if(!input){add("text",{x:0,y:0},g).textContent=prompt}
   else if(allow){add("text",{x:0,y:0},g).textContent=detect?"No":"Out of bounds";bind(g,outside,detect?"No":"Out of bounds")}
  }
@@ -1849,7 +1916,7 @@ function apRenderChoices(answer){
   if(detect)response=pc===q.targetPc?"yes":"no";
   else if(!apTestPhase()&&!apFocus.has(pc))response="other";
   const label=typeof response==="number"?apName(pc):apName(pc)+", "+apResponseLabel(response);
-  bind(key,response,label);
+  if(apTestPhase()||$("apDistractors").checked||apFocus.has(pc))bind(key,response,label);
   key.style.setProperty("--pitch",apColors[pc]);keys.append(key);
  }
  [0,2,4,5,7,9,11].forEach((pc,i)=>drawKey(pc,i*20,20,40,false));
@@ -1911,12 +1978,14 @@ function apShowCurrent(){
  stopAudio();apAnswered=false;apPlayed=false;apStartedAt=0;
  const phase=apActivePhases[apPhaseIndex],q=apCurrent(),testing=apTestPhase();
  $("apExerciseType").textContent=phase.type;
- $("apPhaseInfo").textContent=phase.info;
+ const selectedOnly=!testing&&phase.id!=="study"&&!$("apDistractors").checked;
+ $("apPhaseInfo").textContent=selectedOnly?"Only your selected pitch classes are used.":phase.info;
  $("apQuestionPrompt").textContent=phase.id==="study"?apName(q.pc)+" · "+noteName(q.midi):["detect","detect-octaves"].includes(phase.id)?"Is this "+apName(q.targetPc)+"?":"Which note is this?";
  $("apDirections").textContent=phase.id==="study"?"Remember the sound of this named note. You can replay it before moving on.":
   phase.id==="detect-octaves"?"Choose Yes when the pitch class matches the target in ANY octave. Choose No for a different note, even if it sounds higher or lower. No reference tone is supplied.":
   phase.id==="detect"?"Listen to the isolated tone. Choose Yes if it matches the named target, otherwise No. No comparison tone is supplied.":
   testing?"Identify the note by ear without a reference melody or other sounds. There are 12 possible answers.":
+  selectedOnly?"Choose the pitch class you heard.":
   phase.id==="identify"?"Choose its pitch class or Other if it is outside your current note set.":
   "Choose its pitch class regardless of octave or tone color; use Other if it has not been introduced.";
  $("apFeedback").textContent=phase.id==="study"?"Listen and continue when ready.":"";
@@ -2113,6 +2182,118 @@ window.trainerWidgets=Object.freeze({
  audio:{play:playCurrent,stop:stopAudio,setChunk(length){if([1,2,4,8].includes(length))$("chunk").value=String(length)}},
  quiz:{submit,proceed(){if(!$("nextQuestion").disabled)$("nextQuestion").click()},nextPage(){this.proceed()},showInputOptions(visible){$("questionAnswers").hidden=!visible},feedback(message){$("feedback").textContent=message}}
 });
+const intervalNames=["","Minor second","Major second","Minor third","Major third","Perfect fourth","Tritone","Perfect fifth","Minor sixth","Major sixth","Minor seventh","Major seventh","Octave"];
+const selectedIntervals=new Set([4,6,7]);
+function updateIntervalSetup(){
+ $("ivStart").disabled=selectedIntervals.size<2;
+ $("ivQuiz").disabled=selectedIntervals.size<2;
+ $("ivHint").textContent=selectedIntervals.size<2?"Choose two or more intervals for a quiz.":"Only checked intervals appear in the quiz.";
+}
+intervalNames.forEach((name,size)=>{
+ if(!size)return;
+ const label=document.createElement("label"),input=document.createElement("input");
+ label.className="choice";input.type="checkbox";input.checked=selectedIntervals.has(size);
+ input.onchange=()=>{if(input.checked)selectedIntervals.add(size);else selectedIntervals.delete(size);updateIntervalSetup()};
+ label.append(input,name);$("ivTargets").append(label);
+});
+updateIntervalSetup();
+N.forEach((name,i)=>$("ivTonic").add(new Option(name,i)));
+for(const id of ["ivLow","ivHigh"]){
+ for(let octave=0;octave<=7;octave++)$(id).add(new Option(octave,octave));
+ $(id).value="4";
+}
+$("ivLow").onchange=()=>{if(+$("ivHigh").value<+$("ivLow").value)$("ivHigh").value=$("ivLow").value};
+$("ivHigh").onchange=()=>{if(+$("ivLow").value>+$("ivHigh").value)$("ivLow").value=$("ivHigh").value};
+let intervalRoot,intervalSize,intervalBag=[],intervalCorrect=0,intervalTotal=0;
+function playIntervalSize(size,root=intervalRoot,style=$("ivStyle").value){
+ stopAudio();ctx();
+ const start=audio.currentTime+.03;
+ const chord=style==="chord";
+ tone(root,chord ? .85 : .55,0,start,true);
+ tone(root+size,chord ? .85 : .65,chord?0:.68,start,true);
+}
+function intervalScore(){$("ivScore").textContent=intervalCorrect+" / "+intervalTotal+" correct"}
+function nextInterval(){
+ const choices=[...selectedIntervals].sort((a,b)=>a-b);
+ if(!intervalBag.length)intervalBag=shuffle(choices);
+ intervalSize=intervalBag.pop();
+ const tonic=$("ivTonic").value;
+ const low=+$("ivLow").value,high=+$("ivHigh").value;
+ intervalRoot=12*(1+low+Math.floor(Math.random()*(high-low+1)))+(tonic==="random"?Math.floor(Math.random()*12):+tonic);
+ const answers=$("ivAnswers");
+ answers.replaceChildren();
+ const feedback=$("ivFeedback");
+ delete feedback.dataset.result;
+ feedback.textContent="";
+ $("ivNext").disabled=true;
+ for(const size of choices){
+  const button=document.createElement("button");
+  button.textContent=intervalNames[size];
+  button.dataset.size=size;
+  button.onclick=()=>{
+   for(const choice of answers.children){
+    choice.disabled=true;
+    if(Number(choice.dataset.size)===intervalSize){
+     choice.dataset.result="correct";choice.textContent="✓ "+choice.textContent;
+    }else if(choice===button){
+     choice.dataset.result="wrong";choice.textContent="✗ "+choice.textContent;
+    }
+   }
+   feedback.dataset.result=size===intervalSize?"correct":"wrong";
+   intervalTotal++;
+   if(size===intervalSize)intervalCorrect++;
+   feedback.textContent=(size===intervalSize?"Correct. ":"Incorrect. ")+noteName(intervalRoot)+" → "+noteName(intervalRoot+intervalSize)+" · "+intervalNames[intervalSize]+" ("+intervalSize+" semitones)";
+   intervalScore();$("ivNext").disabled=false;
+  };
+  answers.append(button);
+ }
+ playIntervalSize(intervalSize);
+}
+let studySize=1;
+N.forEach((name,i)=>$("studyTonic").add(new Option(name,i)));
+for(let octave=0;octave<=7;octave++)$("studyOctave").add(new Option(octave,octave));
+$("studyOctave").value="4";
+intervalNames.forEach((name,size)=>{
+ if(!size)return;
+ const button=document.createElement("button");
+ button.textContent=name;button.dataset.size=size;
+ button.onclick=()=>{studySize=size;drawIntervalExample()};
+ $("studyIntervals").append(button);
+});
+function drawIntervalExample(){
+ const root=12*(1+Number($("studyOctave").value))+Number($("studyTonic").value);
+ const notes=[root,root+studySize];
+ const staffContext={name:"C",count:0,alter:Array(7).fill(0),anchors:[root>=60?30:18],spellPrefs:new Map()};
+ $("studyDiagram").innerHTML=staff(notes,staffContext);
+ $("studyTitle").textContent=intervalNames[studySize];
+ $("studyNotes").textContent=notes.map(noteName).join(" → ")+" · "+studySize+(studySize===1?" semitone":" semitones");
+ for(const button of $("studyIntervals").children)button.setAttribute("aria-pressed",String(Number(button.dataset.size)===studySize));
+ playIntervalSize(studySize,root,$("studyStyle").value);
+}
+for(const id of ["studyTonic","studyOctave","studyStyle"])$(id).onchange=drawIntervalExample;
+$("studyRandom").onclick=()=>{
+ $("studyTonic").selectedIndex=($("studyTonic").selectedIndex+1+Math.floor(Math.random()*11))%12;
+ drawIntervalExample();
+};
+$("ivOpenPiano").onclick=()=>{
+ const keys=$("ivPianoKeys"),dialog=$("ivPianoDialog");
+ if(!keys.children.length)buildKeys(keys,21,108,n=>tone(n,.85),new Set());
+ stopAudio();
+ if(activePractice()&&mode!=="touch"){clearHeld();fresh=false;peak=[];updateHeld()}
+ dialog.showModal();
+ const middleC=keys.querySelector('[data-midi="60"]'),scroll=keys.parentElement;
+ scroll.scrollLeft=middleC.offsetLeft-(scroll.clientWidth-middleC.offsetWidth)/2;
+};
+$("ivClosePiano").onclick=()=>$("ivPianoDialog").close();
+$("ivReplay").onclick=()=>playIntervalSize(intervalSize);
+$("ivNext").onclick=nextInterval;
+$("ivSettings").onclick=()=>{stopAudio();show("interval-setup")};
+$("studyBack").onclick=$("ivSettings").onclick;
+$("ivIntro").onclick=()=>{show("interval-study");drawIntervalExample()};
+$("ivStart").onclick=$("ivQuiz").onclick=()=>{
+ intervalBag=[];intervalCorrect=0;intervalTotal=0;intervalScore();
+ show("interval-run");nextInterval();
+};
 show("mode");
 
 })();
