@@ -400,6 +400,7 @@ header button{min-height:34px}
  <div class="practice-bar">
   <strong id="exerciseLabel"></strong><span id="qCount"></span>
   <button id="playQuestion" aria-label="Replay exercise">▶ Replay</button>
+  <button id="revealAnswer" hidden>Show answer</button>
   <button id="nextQuestion" hidden>Next</button>
   <button id="openOptions" aria-label="Practice options" title="Practice options" aria-haspopup="dialog">⚙</button>
  </div>
@@ -430,7 +431,7 @@ header button{min-height:34px}
   <div class="row playback-options"><label>Beat <select id="beat"><option value="1200">Slow</option><option selected value="900">Steady</option><option value="650">Brisk</option></select></label><label>Chunk <select id="chunk"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label></div>
   <p class="tiny" id="keyLegend"></p><details id="guide"><summary>Notation answer key</summary><div id="guideText"></div></details>
   <div class="row"><button id="backExercises">Choose exercises</button><button id="endPractice">End exercise</button></div>
-  <button id="clearPiano" hidden>Clear input</button><button id="revealAnswer" hidden>Show answer</button>
+  <button id="clearPiano" hidden>Clear input</button>
  </dialog>
 </section>
 
@@ -1236,7 +1237,7 @@ function showQuestion(){
  $("inputModeLabel").textContent=mode.toUpperCase();$("nextQuestion").disabled=!review;$("feedback").className="status";$("feedback").textContent=review?"Review and continue.":"Hold the target notes together.";
  $("guide").hidden=q.type!=="to-notation";$("guide").open=false;
  $("guideText").textContent="Intervals: "+intervals.slice(1).map((name,i)=>name+" ("+(i+1)+" semitones)").join(" · ")+" | Chords: "+chordDefs.map(([suffix,name,ints])=>(suffix||"Major")+" · "+name+" · "+ints.join("–")).join(" | ");
- $("revealAnswer").hidden=true;$("nextQuestion").hidden=!review;$("clearPiano").hidden=true;
+ $("revealAnswer").hidden=stage!=="INTRODUCTION";$("nextQuestion").hidden=!review;$("clearPiano").hidden=true;
  $("questionHelp").textContent=review?(q.kind!=="note"?
   (q.revealPhase==="material-meet"?"New "+q.kind:q.kind+" reinforcement")+" · Play "+q.notes.map(noteName).join(" + "):
   ({meet:"New note",review:"Review this note",reinforce:"Note reinforcement"}[q.revealPhase]||"Practice")+" · Listen and play " + q.notes.map(noteName).join(" · ")):
@@ -1418,6 +1419,10 @@ function submit(ns){
  if(done)return;
  const q=questions[qi],value=ns.join(","),matches=signature(q)===value;
  if(!matches)record(q,false,performance.now()-started);
+ if(q.type==="staff-notation"&&!matches){
+  $("feedback").textContent="Incorrect. Try another answer. This question is marked for review.";
+  return;
+ }
  if(stage==="REVEAL"){
   if(matches)advance("Correct",scoredQuestions.has(q));
   else $("feedback").textContent="Marked for review. Try the target again.";
@@ -1581,7 +1586,14 @@ function finish(){clearHeld();fresh=false;stopAudio();if(qi>=questions.length)co
  if(lastOutcome){finalResult.className=$("previousResult").className;finalResult.textContent=$("previousResult").textContent}
  renderSelectedTypes();$("repeatWeak").disabled=$("weakBtn").disabled;show("finished")}
 for(const [s,id] of Object.entries(stages))$(id).onclick=()=>startPractice(s);
-$("playQuestion").onclick=playCurrent;$("revealAnswer").onclick=()=>{$("feedback").textContent=questions[qi].symbol+" · "+questions[qi].notes.map(noteName).join(" ")};
+$("playQuestion").onclick=playCurrent;$("revealAnswer").onclick=()=>{
+ if(stage!=="INTRODUCTION"||done)return;
+ const q=questions[qi];
+ record(q,false,performance.now()-started);
+ $("questionHelp").textContent="Answer: "+q.symbol+" · "+q.notes.map(noteName).join(" + ");
+ $("feedback").textContent="Marked for review. Enter the answer to continue.";
+ $("revealAnswer").hidden=true;
+};
 $("nextQuestion").onclick=()=>advance();
 $("clearPiano").onclick=()=>{selected.clear();paintPiano();$("inputNoteNames").textContent="No notes entered"};
 $("endPractice").onclick=finish;$("backExercises").onclick=()=>{stopAudio();renderSelectedTypes();show("exercises")};
