@@ -371,6 +371,7 @@ header button{min-height:34px}
  <div class="panel"><label class="choice"><input type="checkbox" id="singleNotes"><span><b>Single notes only</b><small>Practice one pitch per question, including ear training and review.</small></span></label><label class="choice"><input type="checkbox" id="singleEarNotes"><span><b>Single-note listening + chord playing</b><small>Listen and transcribe one pitch at a time. Read and play intervals and chords from staff notation or symbols such as Csus2.</small></span></label><div class="grid" id="quizOptions">
   <label class="choice"><input type="checkbox" value="play-sheet" checked><span><b>Play the sheet music</b><small>Read staff notation and perform it</small></span></label>
   <label class="choice"><input type="checkbox" value="play-notation" checked><span><b>Play intervals &amp; chords</b><small>Play named intervals (minor/major seconds, thirds, etc.) and chord symbols such as Csus2</small></span></label>
+  <label class="choice"><input type="checkbox" value="staff-notation"><span><b>Identify intervals &amp; chords on the staff</b><small>Read the highlighted notes and choose the matching interval or chord.</small></span></label>
   <label class="choice"><input type="checkbox" value="play-ear" checked><span><b>Play by ear</b><small>Listen to a short group of up to three questions, then play the notes</small></span></label>
   <label class="choice"><input type="checkbox" value="to-sheet" checked><span><b>Transcribe to sheet</b><small>Represent pitches on a staff</small></span></label>
   <label class="choice"><input type="checkbox" value="to-notation" checked><span><b>Transcribe intervals &amp; chords</b><small>Identify the starting pitch and interval, or the chord with its root pitch</small></span></label>
@@ -894,7 +895,7 @@ function exerciseCandidates(items,type){
  // Symbol exercises assess harmonic relationships, not isolated note names.
  if($("singleEarNotes").checked&&["play-ear","to-sheet","to-note"].includes(type))
   items=items.filter(q=>q.kind==="note");
- const symbolExercise=type==="play-notation"||type==="to-notation";
+ const symbolExercise=["play-notation","staff-notation","to-notation"].includes(type);
  const candidates=items.filter(q=>symbolExercise?["interval","chord"].includes(q.kind):type==="to-note"?["note","chord"].includes(q.kind):true);
  return ($("shuffle").checked?shuffle(candidates):candidates).map(q=>({...q,type,symbol:type==="play-notation"&&q.kind==="chord"?N[pc(q.root)]+q.suffix:q.symbol}));
 }
@@ -903,7 +904,7 @@ function scheduleOrderedExercises(types,source,total){
  const byType=types.map(type=>({type,windows:bases.map(base=>({base,candidates:exerciseCandidates(source.filter(q=>mode==="midi"||inWindow(q,base)),type)})).filter(window=>window.candidates.length)}));
  const missing=byType.filter(group=>!group.windows.length);
  if(missing.length){
-  const harmonicTypes=missing.some(group=>group.type==="play-notation"||group.type==="to-notation");
+  const harmonicTypes=missing.some(group=>["play-notation","staff-notation","to-notation"].includes(group.type));
   const names=missing.map(group=>titles[group.type]).join(", ");
   const explanation=harmonicTypes?" Select two pitches up to an octave apart for an interval, or every pitch of a chord (for example, C4, E4, G4).":" Add matching notes or change the selected exercises.";
   const warning=$("exerciseWarning");
@@ -925,7 +926,7 @@ function scheduleOrderedExercises(types,source,total){
  let previousQuestion=null;
  const chooseQuestions=(candidates,count,cover=[])=>{
   const out=[];
-  const mixedSymbols=["play-notation","to-notation","to-note"].includes(candidates[0]?.type);
+  const mixedSymbols=["play-notation","staff-notation","to-notation","to-note"].includes(candidates[0]?.type);
   const kinds=mixedSymbols?[...new Set(candidates.map(q=>q.kind))]:[];
   // Place an extreme-register question at an unpredictable point in the page.
   const positions=shuffle(Array.from({length:count},(_,i)=>i)),forced=new Map();
@@ -1248,7 +1249,7 @@ function showQuestion(){
   "Play this chord with its root at "+noteName(q.root)+".";
  if(review){$("feedback").textContent="Listen, then play the displayed "+q.kind+" (or tap Next)."}
  else if(q.type==="to-sheet")staffInput();
- else if(q.type==="to-notation"){
+ else if(["staff-notation","to-notation"].includes(q.type)){
   for(const choice of notationChoices(q))button(choice.label,()=>submit(choice.notes));
  }
  else if(q.type==="to-note"){
@@ -1256,12 +1257,20 @@ function showQuestion(){
  }
  $("tapControls").hidden=mode!=="touch"||(review&&q.kind==="note");$("submitTap").disabled=true;$("resetTap").disabled=true;
  if(mode==="touch")$("feedback").textContent=review&&q.kind==="note"?"Tap the displayed note to continue automatically, or press Next.":"Tap keys to select or release them, then submit.";
+ const staffQuiz=q.type==="staff-notation";
+ if(staffQuiz){
+  prompt.textContent=q.kind==="interval"?"Which starting note and interval are shown?":"Which chord and root pitch are shown?";
+  $("questionHelp").textContent="";
+  $("feedback").textContent="Choose the answer for the highlighted notes.";
+  $("tapControls").hidden=true;
+ }
+ $("playQuestion").hidden=staffQuiz;
  const writing=q.type==="to-sheet"&&!review;
- $("piano").closest(".panel").hidden=writing;
+ $("piano").closest(".panel").hidden=writing||staffQuiz;
  if(writing)$("feedback").textContent="Tap a pitch, adjust its accidental, then Submit. Middle C gets a short ledger line when used.";
  const pagePlayback=continuing||q.type==="play-ear";
  $("playQuestion").textContent=review?(q.kind==="chord"?"▶ Replay chord":"▶ Replay note"):(q.type==="play-ear"?(singleEarPage()?"▶ Play remaining notes":"▶ Replay ear group"):pagePlayback?"▶ Play remaining exercise":"▶ Play chunk");
- $("chunk").parentElement.hidden=review||pagePlayback;
+ $("chunk").parentElement.hidden=staffQuiz||review||pagePlayback;
  const manualEarPlayback=singleEarPage() && qi>0 && questions[qi-1].type==="play-ear";
  if(!continuing&&!manualEarPlayback&&(review||["to-sheet","to-note","to-notation","play-ear"].includes(q.type)))playCurrent(true);started=performance.now();
 }
@@ -1345,7 +1354,7 @@ function staffInput(){
  toolbar.append(check);area.append(toolbar,paper);
 }
 function onPracticeStaff(q){
- return q.type==="play-sheet" || (stage==="REVEAL" && (q.kind==="chord" || q.kind==="interval"));
+ return ["staff-notation","play-sheet"].includes(q.type) || (stage==="REVEAL" && (q.kind==="chord" || q.kind==="interval"));
 }
 function scorePage(first,end){
  const box=$("practiceLine"),items=questions.slice(first,end);
@@ -1357,7 +1366,7 @@ function scorePage(first,end){
  let x=0,ink="",currentX=0;
  items.forEach((q,j)=>{
   const active=first+j===qi, readable=visible(q,j);
-  const label=stage==="REVEAL"&&first+j>qi?"?":q.type==="play-sheet"?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):"♫ "+(first+j+1)):readable?q.symbol:q.type==="play-notation"?q.symbol:"♪ "+(first+j+1);
+  const label=stage==="REVEAL"&&first+j>qi?"?":["staff-notation","play-sheet"].includes(q.type)?(stage==="REVEAL"?q.notes.map(noteName).join(" · "):"♫ "+(first+j+1)):readable?q.symbol:q.type==="play-notation"?q.symbol:"♪ "+(first+j+1);
   const width=Math.max(78,label.length*7+18),cx=x+width/2;
   if(active){currentX=cx;ink+='<rect x="'+x+'" y="'+top+'" width="'+width+'" height="'+(bottom-top+24)+'" rx="5" fill="#61baff" opacity=".16"/>'}
   ink+='<g fill="'+(active?'#ffffff':first+j<qi?(q.passed===false?'#ffa49b':'#88cfa1'):'#bfcbda')+'">';
@@ -1471,7 +1480,7 @@ function matchHeld(ns){
  if(ns.join(",")===signature(q))submit(ns);
 }
 function enter(n,source="api:"+n,velocity=NOTE_VELOCITY){
- if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&questions[qi].type==="to-sheet"))return;
+ if(!activePractice()||held.has(source)||(stage!=="REVEAL"&&["to-sheet","staff-notation"].includes(questions[qi].type)))return;
  stopEarPromptOnInput();
  held.set(source,n);fresh=true;const ns=updateHeld();
  // Sound the key *before* checking the answer: a correct Reveal answer
